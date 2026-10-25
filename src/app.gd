@@ -7,7 +7,6 @@ extends Control
 const AURORA := preload("res://shaders/aurora.gdshader")
 const HOME := preload("res://src/screens/home.gd")
 const LIBRARY := preload("res://src/screens/library.gd")
-const SEARCH := preload("res://src/screens/search.gd")
 const SETTINGS := preload("res://src/screens/settings.gd")
 const COLLECTION := preload("res://src/screens/collection.gd")
 const PROMPT := preload("res://src/screens/prompt.gd")
@@ -15,7 +14,8 @@ const EDITOR := preload("res://src/screens/editor.gd")
 const FILL := preload("res://src/screens/fill_sheet.gd")
 const WING := preload("res://src/screens/wing_sheet.gd")
 
-const TABS := [["home", "home", "Lobby"], ["library", "library", "Library"], ["", "plus", ""], ["search", "search", "Search"], ["settings", "gear", "Settings"]]
+## The tab bar keeps the add button at the end, under the thumb.
+const TABS := [["home", "home", "Lobby"], ["library", "library", "Library"], ["settings", "gear", "Settings"], ["", "plus", ""]]
 const MAX_W := 760.0
 const NAV_H := 68.0
 ## Wider than this (in UI units) and the museum switches to its desktop form:
@@ -129,13 +129,13 @@ func _unhandled_input(e: InputEvent) -> void:
 		toggle_fullscreen()
 		get_viewport().set_input_as_handled()
 		return
-	# desktop keyboard shortcuts: Ctrl+N new, Ctrl+F search, Ctrl+1–4 tabs
+	# desktop keyboard shortcuts: Ctrl+N new, Ctrl+F search, Ctrl+1–3 tabs
 	if e is InputEventKey and e.pressed and not e.echo and e.is_command_or_control_pressed() and _sheet == null:
-		var tabs := {KEY_1: "home", KEY_2: "library", KEY_3: "search", KEY_4: "settings"}
+		var tabs := {KEY_1: "home", KEY_2: "library", KEY_3: "settings"}
 		if e.keycode == KEY_N:
 			new_prompt()
 		elif e.keycode == KEY_F:
-			go_tab("search", true, {"focus": true})
+			find()
 		elif tabs.has(e.keycode):
 			go_tab(tabs[e.keycode])
 		else:
@@ -242,8 +242,6 @@ func _make_tab(t: String) -> Node:
 	match t:
 		"library":
 			return LIBRARY.new()
-		"search":
-			return SEARCH.new()
 		"settings":
 			return SETTINGS.new()
 	return HOME.new()
@@ -332,6 +330,19 @@ func _retire(scr: Node, slide: Vector2) -> void:
 
 func open_prompt(id: String) -> void:
 	push(PROMPT.new(), {"id": id})
+
+
+## Search lives at the top of the library: go there with the cursor in it,
+## optionally with a query already typed.
+func find(query := "") -> void:
+	var top := current()
+	if _tab == "library" and _stack.size() == 1 and top and query == "":
+		top.focus_search()
+		return
+	var a := {"focus": true}
+	if query != "":
+		a = {"query": query}
+	go_tab("library", true, a)
 
 
 func open_collection(id: String) -> void:

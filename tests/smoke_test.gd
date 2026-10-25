@@ -13,7 +13,7 @@ func _ready() -> void:
 	await _wait(2.6)
 	var app := App.i
 	assert(app != null)
-	for t in ["library", "search", "settings", "home"]:
+	for t in ["library", "settings", "home"]:
 		app.go_tab(t)
 		await _wait(0.3)
 	var c: Dictionary = Store.collections[0]
@@ -48,10 +48,22 @@ func _ready() -> void:
 	ed._add_tag("smoke, test")
 	ed._save()
 	await _wait(0.6)
-	app.go_tab("library", true, {"filter": "fav"})
+	for view in [Store.ALL, Store.FAVS, Store.UNFILED]:
+		app.open_collection(view)
+		await _wait(0.3)
+		app.current()._cycle_sort()
+		await _wait(0.2)
+		app.pop_to_root()
+	app.find("smoke")
 	await _wait(0.3)
-	app.go_tab("search", true, {"query": "smoke"})
+	if Store.search("smoke").is_empty():
+		printerr("smoke: library search found nothing")
+		get_tree().quit(1)
+		return
+	app.find()
 	await _wait(0.3)
+	app.back()
+	await _wait(0.2)
 	Updater.latest = "9.9.9"
 	Updater._state = 1
 	Updater._notes = Updater.new_notes("", FileAccess.get_file_as_string("res://PATCH_NOTES.md"))
@@ -75,7 +87,7 @@ func _ready() -> void:
 		await _wait(0.3)
 		app.close_sheet()
 		app.pop_to_root()
-		for t in ["library", "search", "settings", "home"]:
+		for t in ["library", "settings", "home"]:
 			app.go_tab(t)
 			await _wait(0.3)
 		app.open_prompt(p.id)

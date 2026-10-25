@@ -58,7 +58,7 @@ func _ready() -> void:
 	await _wait(0.3)
 	await _shot("11_download")
 	Updater.close_overlay()
-	app.go_tab("search", true, {"query": "code"})
+	app.find("code")
 	await _wait(0.8)
 	await _shot("12_search")
 	get_tree().quit()

@@ -99,7 +99,7 @@ func build() -> void:
 		flow.add_theme_constant_override("h_separation", 8)
 		flow.add_theme_constant_override("v_separation", 8)
 		for t in p.tags:
-			flow.add_child(UI.chip("#" + t, false, UI.ACCENT_2, func(): app.go_tab("search", true, {"query": t})))
+			flow.add_child(UI.chip("#" + t, false, UI.ACCENT_2, func(): app.find("#" + t)))
 		side.add_child(UI.caption("Tags", "tag"))
 		side.add_child(flow)
 

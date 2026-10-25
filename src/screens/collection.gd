@@ -1,30 +1,108 @@
 extends Screen
-## One wing of the museum: its painting as a banner, then every prompt in it.
+## One wing of the museum: its painting as a banner, then every prompt in it,
+## sortable and filterable by tag. Also shows the museum-wide views (all
+## prompts, favourites, unfiled), which hang the same way.
+
+const SORTS := [["recent", "Recent"], ["az", "A–Z"], ["used", "Most used"]]
 
 var _id := ""
+var _tag := ""
 
 
 func build() -> void:
 	live = true
 	_id = args.get("id", "")
-	var c := Store.get_collection(_id)
+	var c := _wing()
 	if c.is_empty():
 		top_bar("Wing")
 		body.add_child(W.empty("folder", "This wing is gone", "It may have been deleted."))
 		return
-	top_bar("", [
-		UI.icon_button("edit", func(): app.edit_collection(_id), 46.0),
-		UI.icon_button("plus", func(): app.edit_prompt("", _id), 46.0, Color.WHITE, Color(c.color).darkened(0.1)),
-	])
-	body.add_child(_banner(c))
-	var list := Store.sorted(Store.in_collection(_id), Store.settings.get("sort", "recent"))
+	var tint := Color(c.color)
+	var sort: String = Store.settings.get("sort", "recent")
+	var sort_name := "Recent"
+	for s in SORTS:
+		if s[0] == sort:
+			sort_name = s[1]
+	var sb := UI.icon_chip("sort", sort_name, _cycle_sort)
+	sb.tooltip_text = "Change the order"
+	sb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var actions: Array = [sb]
+	if not _id.begins_with("@"):
+		actions.append(UI.icon_button("edit", func(): app.edit_collection(_id), 46.0))
+	actions.append(UI.icon_button("plus", func(): app.edit_prompt("", current_collection()), 46.0, Color.WHITE, tint.darkened(0.1)))
+	top_bar("", actions)
+	var all := _prompts()
+	body.add_child(_banner(c, all))
+
+	var tags := {}
+	for p in all:
+		for t in p.tags:
+			tags[t] = true
+	var ordered := Store.all_tags().filter(func(t): return tags.has(t))
+	if not tags.has(_tag):
+		_tag = ""
+	if ordered.size() > 1:
+		var tr := chip_row(6)
+		for tg in ordered.slice(0, 24):
+			tr[1].add_child(UI.chip("#" + tg, _tag == tg, UI.ACCENT_2, _set_tag.bind(tg)))
+		body.add_child(tr[0])
+
+	var list := all
+	if _tag != "":
+		list = list.filter(func(p): return p.tags.has(_tag))
+	list = Store.sorted(list, sort)
 	if list.is_empty():
-		body.add_child(W.empty(c.glyph, "An empty gallery", "Prompts you add to %s hang here." % c.name, "Add a prompt", func(): app.edit_prompt("", _id)))
+		match _id:
+			Store.FAVS:
+				body.add_child(W.empty("star", "No favourites yet", "Tap the star on any prompt to hang it here."))
+			Store.UNFILED:
+				body.add_child(W.empty("folder", "Everything is filed", "Prompts without a wing hang here."))
+			_:
+				body.add_child(W.empty(c.glyph, "An empty gallery", "Prompts you add to %s hang here." % c.name, "Add a prompt", func(): app.edit_prompt("", current_collection())))
 	if not list.is_empty():
 		body.add_child(cards(list))
 
 
-func _banner(c: Dictionary) -> Control:
+## The wing on show, or a stand-in for one of the museum-wide views.
+func _wing() -> Dictionary:
+	match _id:
+		Store.ALL:
+			return {"id": _id, "name": "All prompts", "color": UI.ACCENT, "glyph": "library"}
+		Store.FAVS:
+			return {"id": _id, "name": "Favourites", "color": UI.GOLD, "glyph": "star_on"}
+		Store.UNFILED:
+			return {"id": _id, "name": "Unfiled", "color": Color("8a8fa8"), "glyph": "folder"}
+	return Store.get_collection(_id)
+
+
+func _prompts() -> Array:
+	match _id:
+		Store.ALL:
+			return Store.prompts
+		Store.FAVS:
+			return Store.favorites()
+		Store.UNFILED:
+			return Store.in_collection("")
+	return Store.in_collection(_id)
+
+
+func _set_tag(t: String) -> void:
+	_tag = "" if _tag == t else t
+	Fx.haptic(8)
+	refresh()
+
+
+func _cycle_sort() -> void:
+	var cur: String = Store.settings.get("sort", "recent")
+	var k := 0
+	for n in SORTS.size():
+		if SORTS[n][0] == cur:
+			k = n
+	Store.settings.sort = SORTS[(k + 1) % SORTS.size()][0]
+	Store.save_soon()
+
+
+func _banner(c: Dictionary, list: Array) -> Control:
 	var holder := Control.new()
 	holder.custom_minimum_size = Vector2(0, 190)
 	var art := Panel.new()
@@ -60,9 +138,9 @@ func _banner(c: Dictionary) -> Control:
 	fill.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(fill)
 	v.add_child(UI.label(c.name, 32, Color.WHITE, 800))
-	var n := Store.count_in(c.id)
+	var n := list.size()
 	var used := 0
-	for p in Store.in_collection(c.id):
+	for p in list:
 		used += p.uses
 	v.add_child(UI.label("%s  ·  used %s" % [UI.plural(n, "prompt"), UI.plural(used, "time")], 14, Color(1, 1, 1, 0.78), 700))
 	for ch in [holder, art, rim, v]:
@@ -70,5 +148,6 @@ func _banner(c: Dictionary) -> Control:
 	return holder
 
 
+## New prompts made here are filed in this wing (none for the museum-wide views).
 func current_collection() -> String:
-	return _id
+	return "" if _id.begins_with("@") else _id
