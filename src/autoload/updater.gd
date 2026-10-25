@@ -326,7 +326,7 @@ func open_overlay() -> void:
 	_overlay.add_child(bg)
 	var top: float = App.i.safe_top if App.i else 0.0
 	var bottom: float = App.i.safe_bottom if App.i else 0.0
-	var gut: float = App.i.gutter() if App.i else 20.0
+	var gut: float = App.i.page_gutter() if App.i else 20.0
 	var frame := MarginContainer.new()
 	frame.set_anchors_preset(Control.PRESET_FULL_RECT)
 	frame.add_theme_constant_override("margin_left", int(gut))

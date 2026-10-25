@@ -56,6 +56,29 @@ func _ready() -> void:
 	Updater.close_overlay()
 	app.go_tab("home")
 	await _wait(0.5)
+	# flip between the phone and desktop layouts mid-edit and walk every tab
+	for form_size in [Vector2i(1500, 900), Vector2i(480, 900)]:
+		get_window().size = form_size
+		await _wait(0.3)
+		app.edit_prompt(p.id)
+		await _wait(0.3)
+		get_window().size = Vector2i(480, 900) if form_size.x > 900 else Vector2i(1500, 900)
+		await _wait(0.4)
+		app.current()._title.text = "Kept"
+		app.back()
+		await _wait(0.3)
+		app.close_sheet()
+		app.pop_to_root()
+		for t in ["library", "search", "settings", "home"]:
+			app.go_tab(t)
+			await _wait(0.3)
+		app.open_prompt(p.id)
+		await _wait(0.4)
+		app.edit_collection(c.id)
+		await _wait(0.4)
+		app.close_sheet()
+		app.pop_to_root()
+		print("smoke: %s layout ok" % ("desktop" if app.desktop() else "phone"))
 	app.toast("Done", "check", "Undo", func(): pass)
 	await _wait(0.5)
 	print("smoke: ok, %d prompts" % Store.prompts.size())

@@ -20,8 +20,8 @@ func build() -> void:
 	var list := Store.sorted(Store.in_collection(_id), Store.settings.get("sort", "recent"))
 	if list.is_empty():
 		body.add_child(W.empty(c.glyph, "An empty gallery", "Prompts you add to %s hang here." % c.name, "Add a prompt", func(): app.edit_prompt("", _id)))
-	for p in list:
-		body.add_child(W.prompt_card(p, app))
+	if not list.is_empty():
+		body.add_child(cards(list))
 
 
 func _banner(c: Dictionary) -> Control:

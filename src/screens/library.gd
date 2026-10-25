@@ -30,9 +30,9 @@ func build() -> void:
 	body.add_child(head)
 
 	# wing filter chips
-	var hs := UI.hscroll()
-	var chips := UI.hbox(8)
-	hs.add_child(chips)
+	var cr := chip_row()
+	var hs: Control = cr[0]
+	var chips: Container = cr[1]
 	chips.add_child(UI.chip("All  %d" % Store.prompts.size(), filter == "all", UI.ACCENT, _set_filter.bind("all")))
 	chips.add_child(UI.chip("★ Favourites", filter == "fav", UI.GOLD, _set_filter.bind("fav")))
 	for c in Store.collections:
@@ -45,9 +45,9 @@ func build() -> void:
 
 	var tags := Store.all_tags()
 	if not tags.is_empty():
-		var th := UI.hscroll()
-		var trow := UI.hbox(6)
-		th.add_child(trow)
+		var tr := chip_row(6)
+		var th: Control = tr[0]
+		var trow: Container = tr[1]
 		for tg in tags.slice(0, 24):
 			trow.add_child(UI.chip("#" + tg, tag == tg, UI.ACCENT_2, _set_tag.bind(tg)))
 		body.add_child(th)
@@ -63,8 +63,8 @@ func build() -> void:
 				filter = "all"
 				tag = ""
 				refresh()))
-	for p in list:
-		body.add_child(W.prompt_card(p, app))
+	if not list.is_empty():
+		body.add_child(cards(list))
 
 
 func _list() -> Array:

@@ -70,10 +70,10 @@ func _fill() -> void:
 	if hits.is_empty():
 		_results.add_child(W.empty("search", "No exhibits found", "Nothing in the museum mentions that yet.", "Save it as a new prompt", func(): app.edit_prompt()))
 		return
+	var wall := cards(hits.slice(0, 60))
+	_results.add_child(wall)
 	var n := 0
-	for p in hits.slice(0, 60):
-		var card := W.prompt_card(p, app)
-		_results.add_child(card)
+	for card in wall.get_children():
 		Fx.rise(card, mini(n, 8) * 0.03, 0.3)
 		n += 1
 
