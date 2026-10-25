@@ -1,5 +1,9 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: A new icon
+- Prompt Museum has a new icon: a gold gallery frame holding a glowing spark, on the museum's night-blue wall.
+- It shows up on your Android home screen (including round and themed icons on newer phones) and on the Windows app and taskbar.
+
 ## 2026-10-25: Wings come down, screens fill up
 - Deleting a wing works again: confirm and the wing comes down, with its prompts kept safe in the museum, unfiled.
 - Prompt Museum now opens in full screen. On Windows, press F11 or Alt+Enter to switch between full screen and a window.
