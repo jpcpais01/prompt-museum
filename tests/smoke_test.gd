@@ -22,6 +22,11 @@ func _ready() -> void:
 	var p: Dictionary = Store.in_collection(c.id)[0]
 	app.open_prompt(p.id)
 	await _wait(0.5)
+	app.current()._more()
+	await _wait(0.4)
+	app.confirm("Sure?", "A question.", "Yes", func(): pass)
+	await _wait(0.4)
+	app.close_sheet()
 	app.copy_prompt(p.id)
 	await _wait(0.5)
 	app.close_sheet()

@@ -209,18 +209,28 @@ static func new_tile(app: Node, w := 150.0, h := 236.0) -> Control:
 	return holder
 
 
-## A number with a caption, for the lobby's stats row.
+## A number with a caption, for the lobby's stats row: the icon sits in a
+## lit badge, and the card carries a faint wash of its colour.
 static func stat(value: int, caption: String, icon: String, color: Color) -> PanelContainer:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", UI.card_box(14))
+	var sb := UI.card_box(14, UI.SURFACE.lerp(Color(color.darkened(0.35), UI.SURFACE.a), 0.12))
+	sb.border_color = Color(color, 0.2)
+	sb.content_margin_left = 16
+	p.add_theme_stylebox_override("panel", sb)
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var v := UI.vbox(6)
+	var v := UI.vbox(2)
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(v)
-	v.add_child(Icon.make(icon, color, 20))
-	var n := UI.label("0", 26, UI.INK, 800)
-	v.add_child(n)
-	v.add_child(UI.label(caption, 13, UI.SOFT, 600))
+	var top := UI.hbox(8)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var n := UI.label("0", 28, UI.INK, 800)
+	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(n)
+	var b := badge(icon, color, 30)
+	b.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	top.add_child(b)
+	v.add_child(top)
+	v.add_child(UI.label(caption, 13, UI.SOFT, 700))
 	# count up from zero as the lobby opens
 	var tw := n.create_tween()
 	tw.tween_method(func(x: float): n.text = str(roundi(x)), 0.0, float(value), 0.9).set_delay(0.15).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)

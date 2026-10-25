@@ -51,8 +51,7 @@ func build() -> void:
 	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sr.add_child(sl)
 	if wide:
-		sr.add_child(UI.pill("Ctrl F", UI.FAINT))
-		sr.get_child(sr.get_child_count() - 1).size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		sr.add_child(UI.kbd("Ctrl F"))
 	UI.tap(search, func(): app.go_tab("search", true, {"focus": true}), 0.985)
 	W.hover(search)
 	body.add_child(search)
@@ -60,7 +59,7 @@ func build() -> void:
 		body.add_child(stats)
 
 	body.add_child(UI.spacer(2))
-	body.add_child(UI.section("Wings", "See all", func(): app.go_tab("library")))
+	body.add_child(UI.section("Wings", "See all", func(): app.go_tab("library"), Store.collections.size()))
 	var row: Container
 	var wall: Control
 	if wide:
@@ -99,7 +98,7 @@ func build() -> void:
 	var favs := Store.favorites()
 	if not favs.is_empty():
 		cols[0].add_child(UI.spacer(2))
-		cols[0].add_child(UI.section("Favourites", "See all", func(): app.go_tab("library", true, {"filter": "fav"})))
+		cols[0].add_child(UI.section("Favourites", "See all", func(): app.go_tab("library", true, {"filter": "fav"}), favs.size()))
 		cols[0].add_child(cards(Store.sorted(favs, "used").slice(0, 3), 1))
 
 	var rec := Store.recent(5 if not wide else 3)

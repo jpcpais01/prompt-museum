@@ -12,9 +12,7 @@ func build() -> void:
 		_query = str(args.query)
 		args.erase("query")
 	body.add_child(_title())
-	_field = UI.line_edit("Search your prompts", _query)
-	_field.custom_minimum_size.y = 58
-	_field.add_theme_font_size_override("font_size", 18)
+	_field = UI.search_field("Search titles, text, notes and #tags", _query)
 	_field.clear_button_enabled = true
 	_field.right_icon = null
 	_field.text_changed.connect(func(t: String):
@@ -64,6 +62,12 @@ func _fill() -> void:
 			_results.add_child(mflow)
 		else:
 			_results.get_child(_results.get_child_count() - 1).queue_free()
+		# pick up where you left off
+		var rec := Store.recent(3)
+		if not rec.is_empty():
+			_results.add_child(UI.spacer(4))
+			_results.add_child(UI.section("Jump back in"))
+			_results.add_child(cards(rec))
 		return
 	var hits := Store.search(q)
 	_results.add_child(UI.label("%s for “%s”" % [UI.plural(hits.size(), "result"), q], 13, UI.FAINT, 700))

@@ -3,6 +3,7 @@ extends Screen
 ## by recent edits, name or how often it's been used.
 
 const SORTS := [["recent", "Recent"], ["az", "A–Z"], ["used", "Most used"]]
+const SORT_LINE := {"recent": "newest first", "az": "A to Z", "used": "most used first"}
 
 var filter := "all"
 var tag := ""
@@ -24,7 +25,8 @@ func build() -> void:
 	for s in SORTS:
 		if s[0] == sort:
 			sort_name = s[1]
-	var sb := UI.chip(sort_name, false, UI.ACCENT, _cycle_sort)
+	var sb := UI.icon_chip("sort", sort_name, _cycle_sort)
+	sb.tooltip_text = "Change the order"
 	sb.size_flags_vertical = Control.SIZE_SHRINK_END
 	head.add_child(sb)
 	body.add_child(head)
@@ -53,7 +55,13 @@ func build() -> void:
 		body.add_child(th)
 
 	var list := _list()
-	var info := UI.label(UI.plural(list.size(), "prompt") + ("  ·  #" + tag if tag != "" else ""), 13, UI.FAINT, 700)
+	var info := UI.hbox(8)
+	var dot := Panel.new()
+	dot.custom_minimum_size = Vector2(6, 6)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.add_theme_stylebox_override("panel", UI.box(_filter_color(), 3))
+	info.add_child(dot)
+	info.add_child(UI.label(UI.plural(list.size(), "prompt") + ("  ·  #" + tag if tag != "" else "") + "  ·  " + str(SORT_LINE.get(sort, "")), 13, UI.FAINT, 700))
 	body.add_child(info)
 	if list.is_empty():
 		if Store.prompts.is_empty():
@@ -81,6 +89,17 @@ func _list() -> Array:
 	if tag != "":
 		out = out.filter(func(p): return p.tags.has(tag))
 	return Store.sorted(out, Store.settings.get("sort", "recent"))
+
+
+func _filter_color() -> Color:
+	match filter:
+		"all":
+			return UI.ACCENT
+		"fav":
+			return UI.GOLD
+		"none":
+			return UI.SOFT
+	return W.wing_color(filter)
 
 
 func _set_filter(f: String) -> void:
