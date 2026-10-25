@@ -18,6 +18,11 @@ const PALETTE := ["7c5cff", "3dd6f5", "ff6b9a", "ffb547", "4ade80", "f97362", "a
 ## Glyphs a collection can wear (see Icon.gd for how each one is drawn).
 const GLYPHS := ["spark", "code", "pen", "image", "chat", "brain", "music", "briefcase", "book", "bolt", "heart", "globe"]
 
+## Views that open like a wing but gather prompts from the whole museum.
+const ALL := "@all"
+const FAVS := "@fav"
+const UNFILED := "@none"
+
 var collections: Array = []
 var prompts: Array = []
 var settings := {"name": "", "sort": "recent"}

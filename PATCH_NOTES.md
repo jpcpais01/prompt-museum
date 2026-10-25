@@ -1,5 +1,13 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: Walk the wings
+- The Library now opens on a wall of wing cards. Tap a wing to step inside and see every prompt hanging there.
+- Search moved into the Library: the search bar sits at the top and looks through every prompt as you type. The separate Search tab is gone.
+- Quick chips under the search bar open All prompts, Favourites and Unfiled, and tapping a #tag searches for it.
+- Inside a wing you can change the order and filter by tag.
+- The Library ends with the prompts you used last, so you can jump straight back in.
+- Ctrl+F still takes you straight to search, and Ctrl+1 to 3 switch between Lobby, Library and Settings. On a phone, the add button now sits at the end of the tab bar.
+
 ## 2026-10-25: Stars stay put
 - Tapping the star on a prompt card now just favourites or unfavourites it, without opening the prompt. The same goes for a card's copy and Use it buttons, on phone and desktop.
 
