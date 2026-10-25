@@ -21,7 +21,7 @@ func build() -> void:
 	var prof := UI.panel(18)
 	var pv := UI.vbox(10)
 	prof.add_child(pv)
-	pv.add_child(_head("chat", "What should we call you?", UI.ACCENT))
+	pv.add_child(_head("chat", "Your name", UI.ACCENT, "The lobby greets you with it"))
 	var name_field := UI.line_edit("Your name", str(Store.settings.get("name", "")))
 	name_field.text_changed.connect(func(t: String):
 		Store.settings.name = t.strip_edges()
@@ -34,8 +34,8 @@ func build() -> void:
 	var up := UI.panel(18)
 	var uv := UI.vbox(12)
 	up.add_child(uv)
-	uv.add_child(_head("download", "Updates", UI.ACCENT_2))
-	_update_line = UI.wrap("You have version %s." % Updater.current, 15, UI.SOFT)
+	uv.add_child(_head("download", "Updates", UI.ACCENT_2, "Version " + Updater.current))
+	_update_line = UI.wrap("New versions show up here on their own. You can also check now.", 14, UI.SOFT)
 	uv.add_child(_update_line)
 	_update_btn = UI.secondary("Check for updates", _check)
 	if Updater.has_update():
@@ -51,19 +51,12 @@ func build() -> void:
 	var bk := UI.panel(18)
 	var bv := UI.vbox(12)
 	bk.add_child(bv)
-	bv.add_child(_head("upload", "Backup", UI.GOLD))
-	bv.add_child(UI.wrap("Copy your whole museum as text to keep it safe or move it to another device, then paste it back with Import.", 14, UI.SOFT))
-	var row := UI.hbox(10)
-	var ex := UI.secondary("Copy backup", func():
-		app.copy_text(Store.export_text(), "Backup copied: %s" % UI.plural(Store.prompts.size(), "prompt")))
-	ex.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(ex)
-	var im := UI.secondary("Import", _import)
-	im.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(im)
-	bv.add_child(row)
+	bv.add_child(_head("upload", "Backup", UI.GOLD, "Keep your museum safe or move it"))
+	bv.add_child(UI.action_row("copy", "Copy backup", "Your whole museum as text", func():
+		app.copy_text(Store.export_text(), "Backup copied: %s" % UI.plural(Store.prompts.size(), "prompt")), UI.GOLD))
+	bv.add_child(UI.action_row("download", "Import from clipboard", "Paste back a copied backup", _import, UI.GOLD))
 	if OS.get_name() == "Windows":
-		bv.add_child(UI.secondary("Save backup file to Documents", _save_file))
+		bv.add_child(UI.action_row("folder", "Save backup file", "Into your Documents folder", _save_file, UI.GOLD))
 	bk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	wall.add_child(bk)
 
@@ -71,8 +64,8 @@ func build() -> void:
 	var hk := UI.panel(18)
 	var hv := UI.vbox(12)
 	hk.add_child(hv)
-	hv.add_child(_head("wand", "Housekeeping", UI.ACCENT))
-	hv.add_child(UI.secondary("Add the sample exhibition", func():
+	hv.add_child(_head("wand", "Housekeeping", UI.ACCENT, "Samples and a fresh start"))
+	hv.add_child(UI.action_row("spark", "Add the sample exhibition", "A few example prompts and wings", func():
 		var keep_c := Store.collections.duplicate(true)
 		var keep_p := Store.prompts.duplicate(true)
 		Store.seed_samples()
@@ -80,32 +73,47 @@ func build() -> void:
 		Store.prompts = Store.prompts + keep_p
 		Store.save_soon()
 		app.toast("Sample prompts added")))
-	hv.add_child(UI.danger("Erase everything", func():
+	hv.add_child(UI.action_row("trash", "Erase everything", "Every prompt and wing on this device", func():
 		app.confirm("Erase the whole museum?", "Every prompt and wing is deleted from this device. Copy a backup first if you might want them back.", "Erase all", func():
 			Store.collections = []
 			Store.prompts = []
 			Store.save_soon()
-			app.toast("The museum is empty", "trash"))))
+			app.toast("The museum is empty", "trash")), UI.DANGER, true))
 	hk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	wall.add_child(hk)
 
-	var about := UI.vbox(4)
-	var a1 := UI.label("Prompt Museum  %s" % Updater.current, 13, UI.FAINT, 700)
+	# the colophon: the mark, the version, and where your prompts live
+	var about := UI.vbox(6)
+	about.alignment = BoxContainer.ALIGNMENT_CENTER
+	var mark := TextureRect.new()
+	mark.texture = load("res://icon.png")
+	mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mark.custom_minimum_size = Vector2(40, 40)
+	mark.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	mark.modulate.a = 0.85
+	about.add_child(mark)
+	var a1 := UI.label("Prompt Museum", 14, UI.SOFT, 800)
 	a1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	about.add_child(a1)
-	var a2 := UI.label("Your prompts stay on this device.", 12, UI.FAINT, 500)
-	a2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	about.add_child(a2)
-	body.add_child(UI.spacer(4))
+	var lock := UI.hbox(6)
+	lock.alignment = BoxContainer.ALIGNMENT_CENTER
+	lock.add_child(UI.pill(Updater.current, UI.SOFT))
+	lock.add_child(UI.label("Your prompts stay on this device", 12, UI.FAINT, 600))
+	about.add_child(lock)
+	body.add_child(UI.spacer(10))
 	body.add_child(about)
 
 
-func _head(icon: String, title: String, color: Color) -> HBoxContainer:
+func _head(icon: String, title: String, color: Color, sub := "") -> HBoxContainer:
 	var h := UI.hbox(12)
-	h.add_child(W.badge(icon, color, 38))
-	var l := UI.label(title, 17, UI.INK, 800)
-	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	h.add_child(l)
+	h.add_child(W.badge(icon, color, 42))
+	var t := UI.vbox(0)
+	t.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	t.add_child(UI.label(title, 17, UI.INK, 800))
+	if sub != "":
+		t.add_child(UI.label(sub, 13, UI.FAINT, 600))
+	h.add_child(t)
 	return h
 
 

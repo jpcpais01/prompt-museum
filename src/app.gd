@@ -610,8 +610,14 @@ func _build_rail() -> void:
 	v.add_child(fill)
 	_rail_update = UI.vbox(0)
 	v.add_child(_rail_update)
-	var keys := UI.wrap("Ctrl+F search  ·  Esc back", 12, UI.FAINT, 600)
-	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var keys := UI.hbox(6)
+	keys.alignment = BoxContainer.ALIGNMENT_CENTER
+	keys.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	keys.add_child(UI.kbd("Ctrl F"))
+	keys.add_child(UI.label("search", 12, UI.FAINT, 600))
+	keys.add_child(UI.spacer(0, 6))
+	keys.add_child(UI.kbd("Esc"))
+	keys.add_child(UI.label("back", 12, UI.FAINT, 600))
 	v.add_child(keys)
 	Updater.checked.connect(func(_s, _v): _fill_rail_update())
 	Updater.found.connect(func(_v): _fill_rail_update())
@@ -789,8 +795,13 @@ func _drop_sheet(animate: bool) -> void:
 ## A yes/no question; `cb` runs only on yes. This opens a sheet, which
 ## frees whatever sheet was open, so `cb` must not be bound to that sheet.
 func confirm(title: String, message: String, yes: String, cb: Callable, destructive := true) -> void:
-	var v := UI.vbox(16)
-	v.add_child(UI.wrap(message, 16, UI.SOFT))
+	var v := UI.vbox(18)
+	var msg := UI.hbox(14)
+	var mark := W.badge("trash" if destructive else "info", UI.DANGER if destructive else UI.ACCENT, 44)
+	mark.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	msg.add_child(mark)
+	msg.add_child(UI.wrap(message, 16, UI.SOFT))
+	v.add_child(msg)
 	var row := UI.hbox(10)
 	var no_b := UI.secondary("Cancel", close_sheet)
 	no_b.size_flags_horizontal = Control.SIZE_EXPAND_FILL

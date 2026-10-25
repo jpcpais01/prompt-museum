@@ -1,5 +1,16 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: A cleaner museum
+- A cleaner, more consistent look across every screen, on phone and desktop.
+- The lobby's stat cards are lit in their own colours, and section headings show how many things they hold.
+- Search has a proper search bar, and when it's empty it offers the prompts you used last.
+- The Library shows its sort order with an icon and says how your prompts are ordered.
+- A prompt's page shows when it was used and edited at a glance, and names the blanks you'll fill in.
+- The prompt menu, Backup and Housekeeping are now clear lists of actions with icons and a short line on what each does.
+- The editor keeps the wing, model and tags together on one card, with a proper Save button up top.
+- Buttons glow softly, see-through buttons light up under the pointer, and desktop shortcuts appear as keycaps.
+- Confirmations show what they're about before you choose.
+
 ## 2026-10-25: Wings come down, screens fill up
 - Deleting a wing works again: confirm and the wing comes down, with its prompts kept safe in the museum, unfiled.
 - Prompt Museum now opens in full screen. On Windows, press F11 or Alt+Enter to switch between full screen and a window.
