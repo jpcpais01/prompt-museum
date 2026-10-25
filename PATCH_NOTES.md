@@ -1,5 +1,10 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: Wings come down, screens fill up
+- Deleting a wing works again: confirm and the wing comes down, with its prompts kept safe in the museum, unfiled.
+- Prompt Museum now opens in full screen. On Windows, press F11 or Alt+Enter to switch between full screen and a window.
+- On Android the status and navigation bars tuck away so the museum gets the whole screen; swipe from the edge to bring them back.
+
 ## 2026-10-25: A museum for every screen
 - Prompt Museum now shapes itself to your screen. On a phone it's the same touch-first app you know; on a computer or a wide window it opens up into a full desktop layout.
 - On desktop, a side rail replaces the bottom tab bar, with a New prompt button always in reach.

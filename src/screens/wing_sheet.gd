@@ -111,8 +111,6 @@ func _save() -> void:
 func _delete() -> void:
 	var c := Store.get_collection(id)
 	var n := Store.count_in(id)
-	app.confirm("Delete %s?" % c.name, "The wing comes down, but its %s stay in the museum, unfiled." % UI.plural(n, "prompt"), "Delete wing", func():
-		Store.delete_collection(id)
-		if app.current() and app.current().has_method("current_collection") and app.current().current_collection() == id:
-			app.pop()
-		app.toast("Wing deleted", "trash"))
+	# the confirm dialog replaces (and frees) this sheet, so the "yes" must
+	# live on the app, not on a lambda bound to this node
+	app.confirm("Delete %s?" % c.name, "The wing comes down, but its %s stay in the museum, unfiled." % UI.plural(n, "prompt"), "Delete wing", app.delete_wing.bind(id))

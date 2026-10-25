@@ -5,6 +5,7 @@ var out := OS.get_environment("SHOTS_DIR")
 
 
 func _ready() -> void:
+	get_window().mode = Window.MODE_WINDOWED
 	var boot: Control = load("res://scenes/boot.tscn").instantiate()
 	get_tree().root.add_child.call_deferred(boot)
 	await _wait(0.8)

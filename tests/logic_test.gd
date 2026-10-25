@@ -49,6 +49,8 @@ func _ready() -> void:
 	Store.restore_prompt(gone)
 	check(not Store.get_prompt(made.id).is_empty(), "undo restores it")
 	Store.delete_collection(wing)
+	check(Store.get_collection(wing).is_empty(), "deleting a wing removes it")
+	check(Store.collections.size() == 3, "deleting a wing leaves the others")
 	check(Store.get_prompt(made.id).collection == "", "deleting a wing unfiles its prompts")
 	Store.collections = []
 	Store.prompts = []

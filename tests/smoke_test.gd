@@ -7,6 +7,7 @@ func _ready() -> void:
 	get_tree().create_timer(40.0).timeout.connect(func():
 		printerr("smoke: timed out")
 		get_tree().quit(1))
+	get_window().mode = Window.MODE_WINDOWED
 	var boot: Control = load("res://scenes/boot.tscn").instantiate()
 	get_tree().root.add_child.call_deferred(boot)
 	await _wait(2.6)
@@ -79,10 +80,41 @@ func _ready() -> void:
 		app.close_sheet()
 		app.pop_to_root()
 		print("smoke: %s layout ok" % ("desktop" if app.desktop() else "phone"))
+	# delete a wing the way a person does: Delete wing, then confirm
+	var doomed := Store.put_collection({"id": Store.new_id(), "name": "Doomed", "color": Store.PALETTE[0], "glyph": Store.GLYPHS[0]})
+	app.open_collection(doomed.id)
+	await _wait(0.4)
+	app.edit_collection(doomed.id)
+	await _wait(0.4)
+	app._sheet.get_meta("content")._delete()
+	await _wait(0.4)
+	var yes := _find_button(app._sheet, "Delete wing")
+	assert(yes != null)
+	yes.pressed.emit()
+	await _wait(0.6)
+	if not Store.get_collection(doomed.id).is_empty():
+		printerr("smoke: confirming Delete wing left the wing in place")
+		get_tree().quit(1)
+		return
+	if app.current().has_method("current_collection") and app.current().current_collection() == doomed.id:
+		printerr("smoke: still inside a deleted wing")
+		get_tree().quit(1)
+		return
+	print("smoke: wing deleted")
 	app.toast("Done", "check", "Undo", func(): pass)
 	await _wait(0.5)
 	print("smoke: ok, %d prompts" % Store.prompts.size())
 	get_tree().quit(0)
+
+
+func _find_button(n: Node, text: String) -> Button:
+	if n is Button and n.text == text:
+		return n
+	for ch in n.get_children():
+		var b := _find_button(ch, text)
+		if b:
+			return b
+	return null
 
 
 func _wait(s: float) -> void:
