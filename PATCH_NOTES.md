@@ -1,5 +1,10 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: Sharper icons
+- Every icon is now drawn pixel-sharp on your screen, so they no longer look soft or fuzzy on phones and high-resolution displays.
+- Straight edges line up with your screen's pixels for a cleaner, crisper look at small sizes.
+- Redrawn icons: the museum, library, gear, copy and duplicate, chat, brain, flame and refresh icons all have cleaner, more consistent shapes.
+
 ## 2026-10-25: Silky scrolling
 - Scrolling is smooth everywhere. Flick a list and it glides, slowing down naturally like the rest of your phone.
 - Lists stretch a little when you pull past the top or bottom, then spring back.
