@@ -1,5 +1,8 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: Stars stay put
+- Tapping the star on a prompt card now just favourites or unfavourites it, without opening the prompt. The same goes for a card's copy and Use it buttons, on phone and desktop.
+
 ## 2026-10-25: A cleaner museum
 - A cleaner, more consistent look across every screen, on phone and desktop.
 - The lobby's stat cards are lit in their own colours, and section headings show how many things they hold.

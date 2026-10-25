@@ -500,6 +500,23 @@ static func plural(n: int, word: String) -> String:
 	return "%d %s%s" % [n, word, "" if n == 1 else "s"]
 
 
+## True when `local` (a point in `c`'s own space) lands on a visible button
+## inside `c`. Buttons let presses pass through so drags still scroll, so a
+## tappable card has to step aside for them itself.
+static func over_button(c: Control, local: Vector2) -> bool:
+	var at := c.get_global_transform() * local
+	var stack: Array[Node] = c.get_children()
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		var ctl := n as Control
+		if ctl == null or not ctl.is_visible_in_tree():
+			continue
+		if ctl is BaseButton and not (ctl as BaseButton).disabled and ctl.mouse_filter != Control.MOUSE_FILTER_IGNORE and ctl.get_global_rect().has_point(at):
+			return true
+		stack.append_array(ctl.get_children())
+	return false
+
+
 ## Makes any control tappable without stealing the drag from its scroll:
 ## presses pass through, and a release only counts if the finger stayed put.
 static func tap(c: Control, cb: Callable, depth := 0.975) -> void:
@@ -508,6 +525,9 @@ static func tap(c: Control, cb: Callable, depth := 0.975) -> void:
 	c.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
 			if e.pressed:
+				# a press on a button inside the card (star, copy…) is that button's alone
+				if over_button(c, e.position):
+					return
 				c.set_meta("down", true)
 				c.pivot_offset = c.size / 2.0
 				var tw := c.create_tween()
