@@ -1,0 +1,53 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Prompt Museum"
+config/description="Save, organise and reuse your AI prompts."
+config/version="0.1.0"
+run/main_scene="res://scenes/boot.tscn"
+config/features=PackedStringArray("4.5", "Mobile")
+config/icon="res://icon.png"
+config/windows_native_icon="res://windows/icon.ico"
+boot_splash/bg_color=Color(0.039, 0.043, 0.075, 1)
+boot_splash/show_image=false
+run/low_processor_mode=false
+
+[autoload]
+
+Store="*res://src/autoload/store.gd"
+Updater="*res://src/autoload/updater.gd"
+
+[display]
+
+window/size/viewport_width=540
+window/size/viewport_height=960
+window/size/window_width_override=1280
+window/size/window_height_override=820
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+window/vsync/vsync_mode=1
+
+[gui]
+
+theme/custom_font="res://assets/fonts/Manrope.ttf"
+theme/default_font_antialiasing=1
+theme/default_font_subpixel_positioning=1
+common/snap_controls_to_pixels=true
+timers/tooltip_delay_sec=0.4
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+pointing/emulate_touch_from_mouse=false
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/use_debanding=true
+environment/defaults/default_clear_color=Color(0.039, 0.043, 0.075, 1)
+2d/snap/snap_2d_transforms_to_pixel=false
