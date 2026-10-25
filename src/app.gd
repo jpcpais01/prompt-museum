@@ -7,7 +7,6 @@ extends Control
 const AURORA := preload("res://shaders/aurora.gdshader")
 const HOME := preload("res://src/screens/home.gd")
 const LIBRARY := preload("res://src/screens/library.gd")
-const SEARCH := preload("res://src/screens/search.gd")
 const SETTINGS := preload("res://src/screens/settings.gd")
 const COLLECTION := preload("res://src/screens/collection.gd")
 const PROMPT := preload("res://src/screens/prompt.gd")
@@ -15,7 +14,8 @@ const EDITOR := preload("res://src/screens/editor.gd")
 const FILL := preload("res://src/screens/fill_sheet.gd")
 const WING := preload("res://src/screens/wing_sheet.gd")
 
-const TABS := [["home", "home", "Lobby"], ["library", "library", "Library"], ["", "plus", ""], ["search", "search", "Search"], ["settings", "gear", "Settings"]]
+## The tab bar keeps the add button at the end, under the thumb.
+const TABS := [["home", "home", "Lobby"], ["library", "library", "Library"], ["settings", "gear", "Settings"], ["", "plus", ""]]
 const MAX_W := 760.0
 const NAV_H := 68.0
 ## Wider than this (in UI units) and the museum switches to its desktop form:
@@ -129,13 +129,13 @@ func _unhandled_input(e: InputEvent) -> void:
 		toggle_fullscreen()
 		get_viewport().set_input_as_handled()
 		return
-	# desktop keyboard shortcuts: Ctrl+N new, Ctrl+F search, Ctrl+1–4 tabs
+	# desktop keyboard shortcuts: Ctrl+N new, Ctrl+F search, Ctrl+1–3 tabs
 	if e is InputEventKey and e.pressed and not e.echo and e.is_command_or_control_pressed() and _sheet == null:
-		var tabs := {KEY_1: "home", KEY_2: "library", KEY_3: "search", KEY_4: "settings"}
+		var tabs := {KEY_1: "home", KEY_2: "library", KEY_3: "settings"}
 		if e.keycode == KEY_N:
 			new_prompt()
 		elif e.keycode == KEY_F:
-			go_tab("search", true, {"focus": true})
+			find()
 		elif tabs.has(e.keycode):
 			go_tab(tabs[e.keycode])
 		else:
@@ -242,8 +242,6 @@ func _make_tab(t: String) -> Node:
 	match t:
 		"library":
 			return LIBRARY.new()
-		"search":
-			return SEARCH.new()
 		"settings":
 			return SETTINGS.new()
 	return HOME.new()
@@ -332,6 +330,19 @@ func _retire(scr: Node, slide: Vector2) -> void:
 
 func open_prompt(id: String) -> void:
 	push(PROMPT.new(), {"id": id})
+
+
+## Search lives at the top of the library: go there with the cursor in it,
+## optionally with a query already typed.
+func find(query := "") -> void:
+	var top := current()
+	if _tab == "library" and _stack.size() == 1 and top and query == "":
+		top.focus_search()
+		return
+	var a := {"focus": true}
+	if query != "":
+		a = {"query": query}
+	go_tab("library", true, a)
 
 
 func open_collection(id: String) -> void:
@@ -610,8 +621,14 @@ func _build_rail() -> void:
 	v.add_child(fill)
 	_rail_update = UI.vbox(0)
 	v.add_child(_rail_update)
-	var keys := UI.wrap("Ctrl+F search  ·  Esc back", 12, UI.FAINT, 600)
-	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var keys := UI.hbox(6)
+	keys.alignment = BoxContainer.ALIGNMENT_CENTER
+	keys.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	keys.add_child(UI.kbd("Ctrl F"))
+	keys.add_child(UI.label("search", 12, UI.FAINT, 600))
+	keys.add_child(UI.spacer(0, 6))
+	keys.add_child(UI.kbd("Esc"))
+	keys.add_child(UI.label("back", 12, UI.FAINT, 600))
 	v.add_child(keys)
 	Updater.checked.connect(func(_s, _v): _fill_rail_update())
 	Updater.found.connect(func(_v): _fill_rail_update())
@@ -789,8 +806,13 @@ func _drop_sheet(animate: bool) -> void:
 ## A yes/no question; `cb` runs only on yes. This opens a sheet, which
 ## frees whatever sheet was open, so `cb` must not be bound to that sheet.
 func confirm(title: String, message: String, yes: String, cb: Callable, destructive := true) -> void:
-	var v := UI.vbox(16)
-	v.add_child(UI.wrap(message, 16, UI.SOFT))
+	var v := UI.vbox(18)
+	var msg := UI.hbox(14)
+	var mark := W.badge("trash" if destructive else "info", UI.DANGER if destructive else UI.ACCENT, 44)
+	mark.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	msg.add_child(mark)
+	msg.add_child(UI.wrap(message, 16, UI.SOFT))
+	v.add_child(msg)
 	var row := UI.hbox(10)
 	var no_b := UI.secondary("Cancel", close_sheet)
 	no_b.size_flags_horizontal = Control.SIZE_EXPAND_FILL

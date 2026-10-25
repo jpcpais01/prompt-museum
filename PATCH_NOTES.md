@@ -4,6 +4,40 @@
 - Prompt Museum has a new icon: a gold gallery frame holding a glowing spark, on the museum's night-blue wall.
 - It shows up on your Android home screen (including round and themed icons on newer phones) and on the Windows app and taskbar.
 
+## 2026-10-25: Sharper icons
+- Every icon is now drawn pixel-sharp on your screen, so they no longer look soft or fuzzy on phones and high-resolution displays.
+- Straight edges line up with your screen's pixels for a cleaner, crisper look at small sizes.
+- Redrawn icons: the museum, library, gear, copy and duplicate, chat, brain, flame and refresh icons all have cleaner, more consistent shapes.
+
+## 2026-10-25: Silky scrolling
+- Scrolling is smooth everywhere. Flick a list and it glides, slowing down naturally like the rest of your phone.
+- Lists stretch a little when you pull past the top or bottom, then spring back.
+- You can start a scroll anywhere, even with your finger on a button, without tapping it by accident.
+- Touch a moving list to stop it in place.
+- On desktop the mouse wheel and touchpad glide instead of jumping.
+
+## 2026-10-25: Walk the wings
+- The Library now opens on a wall of wing cards. Tap a wing to step inside and see every prompt hanging there.
+- Search moved into the Library: the search bar sits at the top and looks through every prompt as you type. The separate Search tab is gone.
+- Quick chips under the search bar open All prompts, Favourites and Unfiled, and tapping a #tag searches for it.
+- Inside a wing you can change the order and filter by tag.
+- The Library ends with the prompts you used last, so you can jump straight back in.
+- Ctrl+F still takes you straight to search, and Ctrl+1 to 3 switch between Lobby, Library and Settings. On a phone, the add button now sits at the end of the tab bar.
+
+## 2026-10-25: Stars stay put
+- Tapping the star on a prompt card now just favourites or unfavourites it, without opening the prompt. The same goes for a card's copy and Use it buttons, on phone and desktop.
+
+## 2026-10-25: A cleaner museum
+- A cleaner, more consistent look across every screen, on phone and desktop.
+- The lobby's stat cards are lit in their own colours, and section headings show how many things they hold.
+- Search has a proper search bar, and when it's empty it offers the prompts you used last.
+- The Library shows its sort order with an icon and says how your prompts are ordered.
+- A prompt's page shows when it was used and edited at a glance, and names the blanks you'll fill in.
+- The prompt menu, Backup and Housekeeping are now clear lists of actions with icons and a short line on what each does.
+- The editor keeps the wing, model and tags together on one card, with a proper Save button up top.
+- Buttons glow softly, see-through buttons light up under the pointer, and desktop shortcuts appear as keycaps.
+- Confirmations show what they're about before you choose.
+
 ## 2026-10-25: Wings come down, screens fill up
 - Deleting a wing works again: confirm and the wing comes down, with its prompts kept safe in the museum, unfiled.
 - Prompt Museum now opens in full screen. On Windows, press F11 or Alt+Enter to switch between full screen and a window.

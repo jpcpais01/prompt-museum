@@ -77,5 +77,37 @@ func _ready() -> void:
 	var notes: String = U.new_notes(mine, theirs)
 	check(notes.contains("Two [lb]b]") and not notes.contains("One"), "what's new lists only new entries, escaped: %s" % notes)
 
+	# a tap on a card's star or copy button doesn't open the card
+	var card := Control.new()
+	card.size = Vector2(300, 100)
+	add_child(card)
+	var opened := [0]
+	UI.tap(card, func(): opened[0] += 1)
+	var star := Button.new()
+	star.mouse_filter = Control.MOUSE_FILTER_PASS
+	star.position = Vector2(250, 10)
+	star.size = Vector2(40, 40)
+	card.add_child(star)
+	check(UI.over_button(card, Vector2(270, 30)), "the star counts as a button")
+	check(not UI.over_button(card, Vector2(100, 50)), "the card's body isn't a button")
+	_click(card, Vector2(270, 30))
+	check(opened[0] == 0, "tapping the star leaves the card shut")
+	_click(card, Vector2(100, 50))
+	check(opened[0] == 1, "tapping the card's body opens it")
+	star.visible = false
+	_click(card, Vector2(270, 30))
+	check(opened[0] == 2, "a hidden button doesn't block the card")
+	card.queue_free()
+
 	print("logic: %d passed, %d failed" % [_passes, _fails])
 	get_tree().quit(1 if _fails > 0 else 0)
+
+
+func _click(c: Control, at: Vector2) -> void:
+	UI.dragging = false
+	for down in [true, false]:
+		var e := InputEventMouseButton.new()
+		e.button_index = MOUSE_BUTTON_LEFT
+		e.pressed = down
+		e.position = at
+		c.gui_input.emit(e)

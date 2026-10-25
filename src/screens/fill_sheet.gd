@@ -17,7 +17,7 @@ func _ready() -> void:
 	var remembered: Dictionary = Store.settings.get("fills", {}).get(prompt_id, {})
 	var first: Control = null
 	for v in Store.variables(_body):
-		add_child(UI.label(v.to_upper(), 12, UI.ACCENT_2, 800))
+		add_child(UI.caption(v, "variable", UI.ACCENT_2))
 		var long := _is_long(v)
 		var f: Control
 		if long:
@@ -33,7 +33,7 @@ func _ready() -> void:
 		if first == null:
 			first = f
 	add_child(UI.spacer(2))
-	add_child(UI.label("PREVIEW", 12, UI.SOFT, 800))
+	add_child(UI.caption("Preview", "search"))
 	var box := UI.panel(16, Color(0.06, 0.065, 0.1, 0.9))
 	_preview = RichTextLabel.new()
 	_preview.bbcode_enabled = true

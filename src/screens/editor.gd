@@ -40,18 +40,20 @@ func build() -> void:
 	var main: VBoxContainer = cols[0]
 	var side: VBoxContainer = cols[1]
 	var wide := app.desktop()
-	var save := UI.chip("Save", true, UI.ACCENT, _save)
-	save.custom_minimum_size = Vector2(84, 42)
+	var save := UI.primary("Save", _save)
+	save.custom_minimum_size = Vector2(88, 44)
+	save.add_theme_font_size_override("font_size", 15)
+	save.tooltip_text = "Ctrl+S"
 	top_bar("New prompt" if is_new else "Edit prompt", [save])
 
-	main.add_child(_caption("Title"))
+	main.add_child(_caption("Title", "pen"))
 	_title = UI.line_edit("Give it a name you'll recognise", p.get("title", ""))
 	_title.add_theme_font_override("font", UI.font(700))
 	_title.add_theme_font_size_override("font_size", 18)
 	main.add_child(_title)
 
 	var ph := UI.hbox(8)
-	var cap := _caption("Prompt")
+	var cap := _caption("Prompt", "chat")
 	cap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ph.add_child(cap)
 	ph.add_child(UI.chip("{ } Add blank", false, UI.ACCENT_2, _insert_blank))
@@ -66,30 +68,38 @@ func build() -> void:
 	_vars_row.add_theme_constant_override("v_separation", 6)
 	main.add_child(_vars_row)
 
-	side.add_child(_caption("Wing"))
+	# the filing details sit together on one card
+	var filing := UI.panel(18)
+	filing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var fv := UI.vbox(12)
+	filing.add_child(fv)
+	side.add_child(filing)
+	fv.add_child(_caption("Wing", "folder"))
 	var ws: Array = chip_row()
 	_wing_row = ws[1]
-	side.add_child(ws[0])
+	fv.add_child(ws[0])
 
-	side.add_child(_caption("Made for"))
+	fv.add_child(UI.spacer(2))
+	fv.add_child(_caption("Made for", "brain"))
 	_model_row = HFlowContainer.new()
 	_model_row.add_theme_constant_override("h_separation", 8)
 	_model_row.add_theme_constant_override("v_separation", 8)
-	side.add_child(_model_row)
+	fv.add_child(_model_row)
 
-	side.add_child(_caption("Tags"))
+	fv.add_child(UI.spacer(2))
+	fv.add_child(_caption("Tags", "tag"))
 	_tag_field = UI.line_edit("Type a tag and press Enter")
 	_tag_field.text_submitted.connect(_add_tag)
 	_tag_field.text_changed.connect(func(t: String):
 		if t.ends_with(",") or t.ends_with(" "):
 			_add_tag(t))
-	side.add_child(_tag_field)
+	fv.add_child(_tag_field)
 	_tag_row = HFlowContainer.new()
 	_tag_row.add_theme_constant_override("h_separation", 8)
 	_tag_row.add_theme_constant_override("v_separation", 8)
-	side.add_child(_tag_row)
+	fv.add_child(_tag_row)
 
-	side.add_child(_caption("Curator's notes"))
+	side.add_child(_caption("Curator's notes", "book"))
 	_notes = UI.text_edit("Where it works best, what to tweak, results you got…", p.get("notes", ""), 120)
 	side.add_child(_notes)
 
@@ -123,8 +133,8 @@ func _unhandled_key_input(e: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _caption(t: String) -> Label:
-	return UI.label(t.to_upper(), 12, UI.SOFT, 800)
+func _caption(t: String, icon := "") -> HBoxContainer:
+	return UI.caption(t, icon)
 
 
 func _snapshot() -> String:

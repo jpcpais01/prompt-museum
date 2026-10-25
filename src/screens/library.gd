@@ -1,109 +1,138 @@
 extends Screen
-## Every prompt in one place, filtered by wing, favourites or tag, and sorted
-## by recent edits, name or how often it's been used.
+## The museum's floor plan: a search bar over every prompt, then a wall of
+## wing cards. Tapping a wing walks into it; typing searches the whole museum.
 
-const SORTS := [["recent", "Recent"], ["az", "A–Z"], ["used", "Most used"]]
-
-var filter := "all"
-var tag := ""
+var _field: LineEdit
+var _results: VBoxContainer
+var _query := ""
+var _wing_cols := 0
 
 
 func build() -> void:
 	live = true
-	if args.has("filter"):
-		filter = args.filter
-		args.erase("filter")
-	var head := UI.hbox(10)
-	var t := UI.vbox(2)
-	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	t.add_child(UI.label("THE COLLECTION", 12, UI.ACCENT_2, 800))
-	t.add_child(UI.label("Library", 34, UI.INK, 800))
-	head.add_child(t)
-	var sort: String = Store.settings.get("sort", "recent")
-	var sort_name := "Recent"
-	for s in SORTS:
-		if s[0] == sort:
-			sort_name = s[1]
-	var sb := UI.chip(sort_name, false, UI.ACCENT, _cycle_sort)
-	sb.size_flags_vertical = Control.SIZE_SHRINK_END
-	head.add_child(sb)
+	if args.has("query"):
+		_query = str(args.query)
+		args.erase("query")
+	var head := UI.vbox(2)
+	head.add_child(UI.label("THE COLLECTION", 12, UI.ACCENT_2, 800))
+	head.add_child(UI.label("Library", 34, UI.INK, 800))
 	body.add_child(head)
 
-	# wing filter chips
+	_field = UI.search_field("Search every prompt, #tag or model", _query)
+	_field.clear_button_enabled = true
+	_field.right_icon = null
+	_field.text_changed.connect(func(t: String):
+		_query = t
+		_fill())
+	body.add_child(_field)
+	_results = UI.vbox(16)
+	body.add_child(_results)
+	_fill()
+	if args.get("focus", false):
+		args.erase("focus")
+		focus_search()
+
+
+func focus_search() -> void:
+	if _field:
+		_field.grab_focus.call_deferred()
+		_field.caret_column = _field.text.length()
+
+
+func _fill() -> void:
+	for c in _results.get_children():
+		_results.remove_child(c)
+		c.queue_free()
+	var q := _query.strip_edges()
+	if q == "":
+		_browse()
+		return
+	var hits := Store.search(q)
+	_results.add_child(UI.label("%s for “%s”" % [UI.plural(hits.size(), "result"), q], 13, UI.FAINT, 700))
+	if hits.is_empty():
+		_results.add_child(W.empty("search", "No exhibits found", "Nothing in the museum mentions that yet.", "Save it as a new prompt", func(): app.edit_prompt()))
+		return
+	var wall := cards(hits.slice(0, 60))
+	_results.add_child(wall)
+	var n := 0
+	for card in wall.get_children():
+		Fx.rise(card, mini(n, 8) * 0.03, 0.3)
+		n += 1
+
+
+## No query: shortcuts to whole-museum views, the wing wall, and recents.
+func _browse() -> void:
 	var cr := chip_row()
-	var hs: Control = cr[0]
 	var chips: Container = cr[1]
-	chips.add_child(UI.chip("All  %d" % Store.prompts.size(), filter == "all", UI.ACCENT, _set_filter.bind("all")))
-	chips.add_child(UI.chip("★ Favourites", filter == "fav", UI.GOLD, _set_filter.bind("fav")))
-	for c in Store.collections:
-		chips.add_child(UI.chip(c.name, filter == c.id, Color(c.color), _set_filter.bind(c.id)))
+	chips.add_child(UI.chip("All  %d" % Store.prompts.size(), false, UI.ACCENT, func(): app.open_collection(Store.ALL)))
+	var favs := Store.favorites().size()
+	if favs > 0:
+		chips.add_child(UI.chip("★ Favourites  %d" % favs, false, UI.GOLD, func(): app.open_collection(Store.FAVS)))
 	var unfiled := Store.count_in("")
 	if unfiled > 0:
-		chips.add_child(UI.chip("Unfiled", filter == "none", UI.SOFT, _set_filter.bind("none")))
-	chips.add_child(UI.chip("+ Wing", false, UI.ACCENT, func(): app.edit_collection("")))
-	body.add_child(hs)
+		chips.add_child(UI.chip("Unfiled  %d" % unfiled, false, UI.SOFT, func(): app.open_collection(Store.UNFILED)))
+	for tg in Store.all_tags().slice(0, 16):
+		chips.add_child(UI.chip("#" + tg, false, UI.ACCENT_2, _set_query.bind("#" + tg)))
+	_results.add_child(cr[0])
 
-	var tags := Store.all_tags()
-	if not tags.is_empty():
-		var tr := chip_row(6)
-		var th: Control = tr[0]
-		var trow: Container = tr[1]
-		for tg in tags.slice(0, 24):
-			trow.add_child(UI.chip("#" + tg, tag == tg, UI.ACCENT_2, _set_tag.bind(tg)))
-		body.add_child(th)
+	_results.add_child(UI.section("Wings", "", Callable(), Store.collections.size()))
+	_results.add_child(_wing_wall())
 
-	var list := _list()
-	var info := UI.label(UI.plural(list.size(), "prompt") + ("  ·  #" + tag if tag != "" else ""), 13, UI.FAINT, 700)
-	body.add_child(info)
-	if list.is_empty():
-		if Store.prompts.is_empty():
-			body.add_child(W.empty("library", "Nothing on the walls yet", "Save the prompts you keep retyping, and they'll be one tap away.", "Add a prompt", func(): app.edit_prompt()))
-		else:
-			body.add_child(W.empty("filter", "Nothing matches", "Try another wing or tag.", "Show everything", func():
-				filter = "all"
-				tag = ""
-				refresh()))
-	if not list.is_empty():
-		body.add_child(cards(list))
+	if Store.prompts.is_empty():
+		_results.add_child(W.empty("library", "Nothing on the walls yet", "Save the prompts you keep retyping, and they'll be one tap away.", "Add a prompt", func(): app.edit_prompt()))
+		return
+	var rec := Store.recent(app.columns() if app.columns() > 1 else 3)
+	_results.add_child(UI.section("Jump back in"))
+	_results.add_child(cards(rec))
 
 
-func _list() -> Array:
-	var out: Array
-	match filter:
-		"all":
-			out = Store.prompts
-		"fav":
-			out = Store.favorites()
-		"none":
-			out = Store.in_collection("")
-		_:
-			out = Store.in_collection(filter)
-	if tag != "":
-		out = out.filter(func(p): return p.tags.has(tag))
-	return Store.sorted(out, Store.settings.get("sort", "recent"))
+## Every wing as a card, in a grid that fills the column, ending with an
+## empty frame for a new one.
+func _wing_wall() -> Control:
+	var gap := 14.0 if not app.desktop() else 18.0
+	var avail := app.content_width() - app.gutter() * 2.0
+	var cols := _wing_columns()
+	var w := floorf((avail - gap * (cols - 1)) / cols)
+	var h := clampf(w * 1.18, 180.0, 250.0)
+	_wing_cols = cols
+	var g := GridContainer.new()
+	g.columns = cols
+	g.add_theme_constant_override("h_separation", int(gap))
+	g.add_theme_constant_override("v_separation", int(gap) - 16)
+	for c in Store.collections:
+		g.add_child(W.collection_tile(c, app, w, h))
+	g.add_child(W.new_tile(app, w, h))
+	return g
 
 
-func _set_filter(f: String) -> void:
-	filter = f
+func _wing_columns() -> int:
+	var gap := 14.0 if not app.desktop() else 18.0
+	return maxi(2, int((app.content_width() - app.gutter() * 2.0 + gap) / (210.0 + gap)))
+
+
+## A resized window rehangs the wing wall when a column comes or goes.
+func layout() -> void:
+	super()
+	if _results and _wing_cols > 0 and _query.strip_edges() == "" and _wing_columns() != _wing_cols:
+		_wing_cols = 0
+		_fill.call_deferred()
+
+
+func _set_query(q: String) -> void:
+	_query = q
+	_field.text = q
+	_field.caret_column = q.length()
 	Fx.haptic(8)
-	refresh()
+	_fill()
 
 
-func _set_tag(t: String) -> void:
-	tag = "" if tag == t else t
-	Fx.haptic(8)
-	refresh()
+## Back clears a search before it leaves the library.
+func on_back() -> bool:
+	if _query.strip_edges() != "":
+		_set_query("")
+		return true
+	return false
 
 
-func _cycle_sort() -> void:
-	var cur: String = Store.settings.get("sort", "recent")
-	var k := 0
-	for n in SORTS.size():
-		if SORTS[n][0] == cur:
-			k = n
-	Store.settings.sort = SORTS[(k + 1) % SORTS.size()][0]
-	Store.save_soon()
-
-
-func current_collection() -> String:
-	return filter if Store.get_collection(filter).size() > 0 else ""
+func shown_again() -> void:
+	_fill()

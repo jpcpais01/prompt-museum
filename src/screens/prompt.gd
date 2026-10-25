@@ -41,10 +41,14 @@ func build() -> void:
 
 	var title := UI.wrap(p.title if p.title != "" else "Untitled prompt", 36 if wide else 30, UI.INK, 800)
 	main.add_child(title)
-	var facts := "Used %s  ·  edited %s" % [UI.plural(p.uses, "time"), UI.ago(p.updated).to_lower()]
+	var facts := HFlowContainer.new()
+	facts.add_theme_constant_override("h_separation", 18)
+	facts.add_theme_constant_override("v_separation", 6)
+	facts.add_child(_fact("copy", "Used " + UI.plural(p.uses, "time")))
+	facts.add_child(_fact("edit", "Edited " + UI.ago(p.updated).to_lower()))
 	if p.last_used > 0:
-		facts += "  ·  last used %s" % UI.ago(p.last_used).to_lower()
-	main.add_child(UI.wrap(facts, 13, UI.FAINT, 700))
+		facts.add_child(_fact("clock", "Last used " + UI.ago(p.last_used).to_lower()))
+	main.add_child(facts)
 
 	# the text itself, on a lit plinth
 	var plinth := PanelContainer.new()
@@ -79,11 +83,15 @@ func build() -> void:
 
 	var vars := Store.variables(p.body)
 	if not vars.is_empty():
-		var vh := UI.hbox(8)
+		var vh := HFlowContainer.new()
+		vh.add_theme_constant_override("h_separation", 6)
+		vh.add_theme_constant_override("v_separation", 6)
 		var vi := Icon.make("variable", UI.ACCENT_2, 18)
 		vi.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		vh.add_child(vi)
-		vh.add_child(UI.wrap("%s to fill in when you copy it" % UI.plural(vars.size(), "blank"), 14, UI.SOFT, 600))
+		vh.add_child(UI.label("You'll fill in", 14, UI.SOFT, 600))
+		for v in vars:
+			vh.add_child(UI.pill(v, UI.ACCENT_2, Color(UI.ACCENT_2, 0.12)))
 		main.add_child(vh)
 
 	if not p.tags.is_empty():
@@ -91,15 +99,14 @@ func build() -> void:
 		flow.add_theme_constant_override("h_separation", 8)
 		flow.add_theme_constant_override("v_separation", 8)
 		for t in p.tags:
-			flow.add_child(UI.chip("#" + t, false, UI.ACCENT_2, func(): app.go_tab("search", true, {"query": t})))
-		if wide:
-			side.add_child(UI.label("TAGS", 12, UI.SOFT, 800))
+			flow.add_child(UI.chip("#" + t, false, UI.ACCENT_2, func(): app.find("#" + t)))
+		side.add_child(UI.caption("Tags", "tag"))
 		side.add_child(flow)
 
 	if p.notes.strip_edges() != "":
 		var notes := UI.panel(18)
 		var nv := UI.vbox(8)
-		nv.add_child(UI.label("CURATOR'S NOTES", 12, UI.GOLD, 800))
+		nv.add_child(UI.caption("Curator's notes", "pen", UI.GOLD))
 		nv.add_child(UI.wrap(p.notes, 15, UI.SOFT, 500))
 		notes.add_child(nv)
 		side.add_child(notes)
@@ -121,7 +128,7 @@ func build() -> void:
 		var act := UI.panel(16)
 		var av := UI.vbox(12)
 		act.add_child(av)
-		av.add_child(UI.label("USE THIS EXHIBIT", 12, Color(col.lightened(0.3), 0.9), 800))
+		av.add_child(UI.caption("Use this exhibit", "spark", Color(col.lightened(0.3), 0.9)))
 		av.add_child(bar)
 		side.add_child(act)
 		side.move_child(act, 0)
@@ -135,23 +142,30 @@ func _toggle_star() -> void:
 	app.toast("Added to favourites" if on else "Removed from favourites", "star_on" if on else "star")
 
 
+func _fact(icon: String, text: String) -> HBoxContainer:
+	var h := UI.hbox(6)
+	var ic := Icon.make(icon, UI.FAINT, 14)
+	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(ic)
+	h.add_child(UI.label(text, 13, UI.FAINT, 700))
+	return h
+
+
 func _more() -> void:
 	var v := UI.vbox(10)
-	var dup := UI.secondary("Duplicate", func():
+	v.add_child(UI.action_row("duplicate", "Duplicate", "Make an editable copy", func():
 		app.close_sheet()
 		var c := Store.duplicate_prompt(_id)
 		if not c.is_empty():
 			app.toast("Duplicated")
-			app.edit_prompt(c.id))
-	v.add_child(dup)
-	var raw := UI.secondary("Copy without filling blanks", func():
-		app.close_sheet()
-		app.copy_prompt(_id, true))
-	v.add_child(raw)
-	var del := UI.danger("Delete prompt", func():
+			app.edit_prompt(c.id)))
+	if not Store.variables(Store.get_prompt(_id).get("body", "")).is_empty():
+		v.add_child(UI.action_row("copy", "Copy as written", "Keep the {{blanks}} unfilled", func():
+			app.close_sheet()
+			app.copy_prompt(_id, true), UI.ACCENT_2))
+	v.add_child(UI.action_row("trash", "Delete prompt", "You can undo right after", func():
 		app.close_sheet()
 		var gone := Store.delete_prompt(_id)
 		app.pop()
-		app.toast("Prompt deleted", "trash", "Undo", func(): Store.restore_prompt(gone)))
-	v.add_child(del)
+		app.toast("Prompt deleted", "trash", "Undo", func(): Store.restore_prompt(gone)), UI.DANGER, true))
 	app.sheet("Prompt", v)
