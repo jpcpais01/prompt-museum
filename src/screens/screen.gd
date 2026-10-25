@@ -71,6 +71,12 @@ func on_back() -> bool:
 	return false
 
 
+## True for screens read as one narrow column on wide windows (a prompt,
+## the editor) rather than spread across the full width.
+func reading() -> bool:
+	return false
+
+
 ## The window crossed between the phone and desktop layouts: rebuild in the
 ## new shape. Screens holding unsaved input override this to keep it.
 func form_changed() -> void:
@@ -118,7 +124,7 @@ func is_root() -> bool:
 func layout() -> void:
 	if app == null or _pad == null:
 		return
-	var g := app.gutter()
+	var g := app.gutter(reading())
 	var top := app.safe_top
 	for m in [_pad]:
 		m.add_theme_constant_override("margin_left", int(g))
@@ -191,20 +197,20 @@ func chip_row(sep := 8) -> Array:
 	return [hs, row]
 
 
-## Two columns side by side on desktop (main grows, side is fixed); on a
-## phone both are just `body`. Returns [main, side].
-func split(side_w := 360.0, sep := 28) -> Array:
+## Two equal columns side by side on desktop; on a phone both are just
+## `body`. Returns [left, right].
+func split(sep := 28) -> Array:
 	if not app.desktop():
 		return [body, body]
 	var h := UI.hbox(sep)
-	var main := UI.vbox(16)
-	main.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	h.add_child(main)
-	var side := UI.vbox(16)
-	side.custom_minimum_size.x = side_w
-	h.add_child(side)
+	var cols := []
+	for n in 2:
+		var v := UI.vbox(16)
+		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(v)
+		cols.append(v)
 	body.add_child(h)
-	return [main, side]
+	return cols
 
 
 ## The big title that opens a tab screen.

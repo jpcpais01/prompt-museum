@@ -5,9 +5,7 @@ extends Screen
 func build() -> void:
 	live = true
 	var wide := app.desktop()
-	# brand row (on desktop the rail carries the brand and the update chip)
-	if not wide:
-		body.add_child(_brand_row())
+	body.add_child(_brand_row())
 
 	var who: String = str(Store.settings.get("name", "")).strip_edges()
 	var hello := UI.vbox(4)
@@ -92,9 +90,7 @@ func build() -> void:
 		body.add_child(_exhibit_card(pick))
 
 	# favourites and recents: stacked on a phone, side by side on desktop
-	var cols := split(0.0)
-	if wide:
-		cols[1].size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var cols := split()
 	var favs := Store.favorites()
 	if not favs.is_empty():
 		cols[0].add_child(UI.spacer(2))
