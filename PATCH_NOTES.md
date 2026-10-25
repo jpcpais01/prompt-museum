@@ -1,5 +1,9 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: A new icon
+- Prompt Museum has a new icon: a gold gallery frame holding a glowing spark, on the museum's night-blue wall.
+- It shows up on your Android home screen (including round and themed icons on newer phones) and on the Windows app and taskbar.
+
 ## 2026-10-25: Sharper icons
 - Every icon is now drawn pixel-sharp on your screen, so they no longer look soft or fuzzy on phones and high-resolution displays.
 - Straight edges line up with your screen's pixels for a cleaner, crisper look at small sizes.
