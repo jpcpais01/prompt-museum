@@ -1,5 +1,12 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: Silky scrolling
+- Scrolling is smooth everywhere. Flick a list and it glides, slowing down naturally like the rest of your phone.
+- Lists stretch a little when you pull past the top or bottom, then spring back.
+- You can start a scroll anywhere, even with your finger on a button, without tapping it by accident.
+- Touch a moving list to stop it in place.
+- On desktop the mouse wheel and touchpad glide instead of jumping.
+
 ## 2026-10-25: Walk the wings
 - The Library now opens on a wall of wing cards. Tap a wing to step inside and see every prompt hanging there.
 - Search moved into the Library: the search bar sits at the top and looks through every prompt as you type. The separate Search tab is gone.
