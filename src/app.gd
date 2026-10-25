@@ -124,6 +124,11 @@ func _unhandled_input(e: InputEvent) -> void:
 		back()
 		get_viewport().set_input_as_handled()
 		return
+	# F11 or Alt+Enter flips fullscreen on desktop
+	if e is InputEventKey and e.pressed and not e.echo and (e.keycode == KEY_F11 or (e.keycode == KEY_ENTER and e.alt_pressed)):
+		toggle_fullscreen()
+		get_viewport().set_input_as_handled()
+		return
 	# desktop keyboard shortcuts: Ctrl+N new, Ctrl+F search, Ctrl+1–4 tabs
 	if e is InputEventKey and e.pressed and not e.echo and e.is_command_or_control_pressed() and _sheet == null:
 		var tabs := {KEY_1: "home", KEY_2: "library", KEY_3: "search", KEY_4: "settings"}
@@ -136,6 +141,11 @@ func _unhandled_input(e: InputEvent) -> void:
 		else:
 			return
 		get_viewport().set_input_as_handled()
+
+
+func toggle_fullscreen() -> void:
+	var w := get_window()
+	w.mode = Window.MODE_WINDOWED if w.mode == Window.MODE_FULLSCREEN or w.mode == Window.MODE_EXCLUSIVE_FULLSCREEN else Window.MODE_FULLSCREEN
 
 
 func _notification(what: int) -> void:
@@ -330,6 +340,15 @@ func open_collection(id: String) -> void:
 
 func edit_prompt(id := "", collection := "") -> void:
 	push(EDITOR.new(), {"id": id, "collection": collection})
+
+
+## Takes a wing down (its prompts stay, unfiled) and leaves its room if open.
+func delete_wing(id: String) -> void:
+	Store.delete_collection(id)
+	var top := current()
+	if top and top.has_method("current_collection") and top.current_collection() == id:
+		pop()
+	toast("Wing deleted", "trash")
 
 
 func edit_collection(id := "", on_saved: Callable = Callable()) -> void:
@@ -767,7 +786,8 @@ func _drop_sheet(animate: bool) -> void:
 		d.queue_free())
 
 
-## A yes/no question; `cb` runs only on yes.
+## A yes/no question; `cb` runs only on yes. This opens a sheet, which
+## frees whatever sheet was open, so `cb` must not be bound to that sheet.
 func confirm(title: String, message: String, yes: String, cb: Callable, destructive := true) -> void:
 	var v := UI.vbox(16)
 	v.add_child(UI.wrap(message, 16, UI.SOFT))
@@ -777,6 +797,9 @@ func confirm(title: String, message: String, yes: String, cb: Callable, destruct
 	row.add_child(no_b)
 	var go := func():
 		close_sheet()
+		if not cb.is_valid():
+			push_error("confirm: the yes callback's owner was freed before it ran")
+			return
 		cb.call()
 	var yes_b := UI.danger(yes, go) if destructive else UI.primary(yes, go)
 	yes_b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
