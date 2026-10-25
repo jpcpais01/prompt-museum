@@ -118,10 +118,83 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	print("smoke: wing deleted")
+	if not await _scrolling(app):
+		get_tree().quit(1)
+		return
 	app.toast("Done", "check", "Undo", func(): pass)
 	await _wait(0.5)
 	print("smoke: ok, %d prompts" % Store.prompts.size())
 	get_tree().quit(0)
+
+
+## Flicks, drags and wheels the Library (the physics, not the pixels).
+func _scrolling(app: App) -> bool:
+	get_window().size = Vector2i(480, 900)
+	await _wait(0.3)
+	app.go_tab("library")
+	await _wait(0.5)
+	var sc: SmoothScroll = app.current()._scroll
+	sc.fling(-3000.0)
+	await _wait(0.08)
+	if sc._pos >= 0.0:
+		printerr("smoke: a flick past the top didn't stretch")
+		return false
+	await _wait(1.6)
+	if sc.moving() or absf(sc._pos) > 0.01:
+		printerr("smoke: the stretch didn't spring back (%s)" % sc._pos)
+		return false
+	# a finger drag upwards (touches arrive as emulated mouse events)
+	var at := sc.get_global_rect().get_center()
+	_touch(at, true)
+	var peak := 0.0
+	for i in 10:
+		at.y -= 24.0
+		_drag(at)
+		await get_tree().process_frame
+		peak = maxf(peak, sc._pos)
+	_touch(at, false)
+	if peak <= 0.0:
+		printerr("smoke: dragging didn't move the list")
+		return false
+	await _wait(2.5)
+	if sc.moving() or sc._pos < -0.01 or sc._pos > sc.span() + 0.01:
+		printerr("smoke: the list didn't come to rest inside its ends (%s)" % sc._pos)
+		return false
+	# the mouse wheel glides up a notch at a time
+	var before := sc._pos
+	var w := InputEventMouseButton.new()
+	w.button_index = MOUSE_BUTTON_WHEEL_UP
+	w.pressed = true
+	w.factor = 1.0
+	w.position = at
+	w.global_position = at
+	get_viewport().push_input(w)
+	await _wait(0.6)
+	if sc._pos >= before - 1.0:
+		printerr("smoke: the wheel didn't scroll (%s -> %s)" % [before, sc._pos])
+		return false
+	print("smoke: scrolling ok")
+	return true
+
+
+func _touch(at: Vector2, down: bool) -> void:
+	var e := InputEventMouseButton.new()
+	e.device = InputEvent.DEVICE_ID_EMULATION
+	e.button_index = MOUSE_BUTTON_LEFT
+	e.pressed = down
+	e.position = at
+	e.global_position = at
+	e.button_mask = MOUSE_BUTTON_MASK_LEFT if down else 0
+	get_viewport().push_input(e)
+
+
+func _drag(at: Vector2) -> void:
+	var e := InputEventMouseMotion.new()
+	e.device = InputEvent.DEVICE_ID_EMULATION
+	e.position = at
+	e.global_position = at
+	e.button_mask = MOUSE_BUTTON_MASK_LEFT
+	get_viewport().push_input(e)
 
 
 func _find_button(n: Node, text: String) -> Button:

@@ -441,12 +441,11 @@ static func search_field(placeholder := "", text := "") -> LineEdit:
 	return e
 
 
-static func scroll() -> ScrollContainer:
-	var s := ScrollContainer.new()
+static func scroll() -> SmoothScroll:
+	var s := SmoothScroll.new()
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	s.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	s.scroll_deadzone = 8
 	var bar := s.get_v_scroll_bar()
 	bar.add_theme_stylebox_override("scroll", StyleBoxEmpty.new())
 	bar.add_theme_stylebox_override("grabber", box(Color(1, 1, 1, 0.14), 3))
@@ -456,12 +455,11 @@ static func scroll() -> ScrollContainer:
 	return s
 
 
-static func hscroll() -> ScrollContainer:
-	var s := ScrollContainer.new()
+static func hscroll() -> SmoothScroll:
+	var s := SmoothScroll.new(false)
 	s.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	s.scroll_deadzone = 8
 	return s
 
 

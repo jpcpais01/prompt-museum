@@ -12,7 +12,7 @@ var stale := false
 var live := false
 
 var body: VBoxContainer
-var _scroll: ScrollContainer
+var _scroll: SmoothScroll
 var _pad: MarginContainer
 var _frame: VBoxContainer
 var _header: MarginContainer
@@ -108,8 +108,7 @@ func _finish_body() -> void:
 
 
 func scroll_to_top() -> void:
-	var tw := create_tween()
-	tw.tween_property(_scroll, "scroll_vertical", 0, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_scroll.scroll_to(0.0)
 
 
 func is_root() -> bool:
