@@ -7,6 +7,15 @@ var _update_btn: Button
 
 func build() -> void:
 	hero_title("Make it yours", "Settings")
+	# a phone stacks the panels; desktop lays them out two by two
+	var wall: Container = body
+	if app.desktop():
+		var g := GridContainer.new()
+		g.columns = 2
+		g.add_theme_constant_override("h_separation", 18)
+		g.add_theme_constant_override("v_separation", 18)
+		body.add_child(g)
+		wall = g
 
 	# profile
 	var prof := UI.panel(18)
@@ -18,7 +27,8 @@ func build() -> void:
 		Store.settings.name = t.strip_edges()
 		Store.save_soon())
 	pv.add_child(name_field)
-	body.add_child(prof)
+	prof.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wall.add_child(prof)
 
 	# updates
 	var up := UI.panel(18)
@@ -34,7 +44,8 @@ func build() -> void:
 	elif not Updater.supported():
 		_update_line.text = "You have version %s. This build can't update itself; updates come with new releases on GitHub." % Updater.current
 	uv.add_child(_update_btn)
-	body.add_child(up)
+	up.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wall.add_child(up)
 
 	# backup
 	var bk := UI.panel(18)
@@ -53,7 +64,8 @@ func build() -> void:
 	bv.add_child(row)
 	if OS.get_name() == "Windows":
 		bv.add_child(UI.secondary("Save backup file to Documents", _save_file))
-	body.add_child(bk)
+	bk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wall.add_child(bk)
 
 	# housekeeping
 	var hk := UI.panel(18)
@@ -74,7 +86,8 @@ func build() -> void:
 			Store.prompts = []
 			Store.save_soon()
 			app.toast("The museum is empty", "trash"))))
-	body.add_child(hk)
+	hk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wall.add_child(hk)
 
 	var about := UI.vbox(4)
 	var a1 := UI.label("Prompt Museum  %s" % Updater.current, 13, UI.FAINT, 700)

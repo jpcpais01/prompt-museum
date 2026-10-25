@@ -71,6 +71,12 @@ func on_back() -> bool:
 	return false
 
 
+## The window crossed between the phone and desktop layouts: rebuild in the
+## new shape. Screens holding unsaved input override this to keep it.
+func form_changed() -> void:
+	refresh()
+
+
 func keyboard_changed(h: float) -> void:
 	_kb_spacer.custom_minimum_size.y = maxf(0.0, h - (app.safe_bottom if app else 0.0))
 
@@ -151,6 +157,55 @@ func footer(c: Control) -> void:
 	_footer.add_child(c)
 	_footer.visible = true
 	layout()
+
+
+## A wall of prompt cards: one column on a phone, a grid on desktop.
+func cards(list: Array, cols := -1) -> Control:
+	var n := app.columns() if cols < 0 else cols
+	if n <= 1:
+		var v := UI.vbox(16)
+		for p in list:
+			v.add_child(W.prompt_card(p, app))
+		return v
+	var g := GridContainer.new()
+	g.columns = n
+	g.add_theme_constant_override("h_separation", 16)
+	g.add_theme_constant_override("v_separation", 16)
+	for p in list:
+		var c := W.prompt_card(p, app)
+		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		g.add_child(c)
+	return g
+
+
+## A row of chips: a sideways swipe on a phone, wrapping lines on desktop
+## (where a mouse can't drag a strip). Returns [the node to add, its row].
+func chip_row(sep := 8) -> Array:
+	if app.desktop():
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", sep)
+		flow.add_theme_constant_override("v_separation", sep)
+		return [flow, flow]
+	var hs := UI.hscroll()
+	var row := UI.hbox(sep)
+	hs.add_child(row)
+	return [hs, row]
+
+
+## Two columns side by side on desktop (main grows, side is fixed); on a
+## phone both are just `body`. Returns [main, side].
+func split(side_w := 360.0, sep := 28) -> Array:
+	if not app.desktop():
+		return [body, body]
+	var h := UI.hbox(sep)
+	var main := UI.vbox(16)
+	main.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(main)
+	var side := UI.vbox(16)
+	side.custom_minimum_size.x = side_w
+	h.add_child(side)
+	body.add_child(h)
+	return [main, side]
 
 
 ## The big title that opens a tab screen.

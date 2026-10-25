@@ -9,7 +9,7 @@ var _notes: TextEdit
 var _tag_field: LineEdit
 var _vars_row: HFlowContainer
 var _vars_hint: Label
-var _wing_row: HBoxContainer
+var _wing_row: Container
 var _model_row: HFlowContainer
 var _tag_row: HFlowContainer
 var _collection := ""
@@ -17,86 +17,110 @@ var _model := "Any"
 var _tags: Array = []
 var _favorite := false
 var _start := ""
+## what was typed when the layout flipped between phone and desktop
+var _draft := {}
 
 
 func build() -> void:
 	_id = args.get("id", "")
 	var p := Store.get_prompt(_id)
 	var is_new := p.is_empty()
-	if is_new:
+	if not _draft.is_empty():
+		# rebuilding for a new layout: keep the typed text and the picks
+		p = p.duplicate()
+		p.merge(_draft, true)
+	elif is_new:
 		_collection = args.get("collection", "")
 	else:
 		_collection = p.collection
 		_model = p.model
 		_tags = p.tags.duplicate()
 		_favorite = p.favorite
+	var cols := split(400.0)
+	var main: VBoxContainer = cols[0]
+	var side: VBoxContainer = cols[1]
+	var wide := app.desktop()
 	var save := UI.chip("Save", true, UI.ACCENT, _save)
 	save.custom_minimum_size = Vector2(84, 42)
 	top_bar("New prompt" if is_new else "Edit prompt", [save])
 
-	body.add_child(_caption("Title"))
+	main.add_child(_caption("Title"))
 	_title = UI.line_edit("Give it a name you'll recognise", p.get("title", ""))
 	_title.add_theme_font_override("font", UI.font(700))
 	_title.add_theme_font_size_override("font_size", 18)
-	body.add_child(_title)
+	main.add_child(_title)
 
 	var ph := UI.hbox(8)
 	var cap := _caption("Prompt")
 	cap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ph.add_child(cap)
 	ph.add_child(UI.chip("{ } Add blank", false, UI.ACCENT_2, _insert_blank))
-	body.add_child(ph)
-	_body = UI.text_edit("Write the prompt. Wrap words in {{double braces}} to make blanks you fill in each time you use it.", p.get("body", ""), 260)
+	main.add_child(ph)
+	_body = UI.text_edit("Write the prompt. Wrap words in {{double braces}} to make blanks you fill in each time you use it.", p.get("body", ""), 460 if wide else 260)
 	_body.text_changed.connect(_scan_vars)
-	body.add_child(_body)
+	main.add_child(_body)
 	_vars_hint = UI.wrap("", 13, UI.FAINT, 600)
-	body.add_child(_vars_hint)
+	main.add_child(_vars_hint)
 	_vars_row = HFlowContainer.new()
 	_vars_row.add_theme_constant_override("h_separation", 6)
 	_vars_row.add_theme_constant_override("v_separation", 6)
-	body.add_child(_vars_row)
+	main.add_child(_vars_row)
 
-	body.add_child(_caption("Wing"))
-	var ws := UI.hscroll()
-	_wing_row = UI.hbox(8)
-	ws.add_child(_wing_row)
-	body.add_child(ws)
+	side.add_child(_caption("Wing"))
+	var ws: Array = chip_row()
+	_wing_row = ws[1]
+	side.add_child(ws[0])
 
-	body.add_child(_caption("Made for"))
+	side.add_child(_caption("Made for"))
 	_model_row = HFlowContainer.new()
 	_model_row.add_theme_constant_override("h_separation", 8)
 	_model_row.add_theme_constant_override("v_separation", 8)
-	body.add_child(_model_row)
+	side.add_child(_model_row)
 
-	body.add_child(_caption("Tags"))
+	side.add_child(_caption("Tags"))
 	_tag_field = UI.line_edit("Type a tag and press Enter")
 	_tag_field.text_submitted.connect(_add_tag)
 	_tag_field.text_changed.connect(func(t: String):
 		if t.ends_with(",") or t.ends_with(" "):
 			_add_tag(t))
-	body.add_child(_tag_field)
+	side.add_child(_tag_field)
 	_tag_row = HFlowContainer.new()
 	_tag_row.add_theme_constant_override("h_separation", 8)
 	_tag_row.add_theme_constant_override("v_separation", 8)
-	body.add_child(_tag_row)
+	side.add_child(_tag_row)
 
-	body.add_child(_caption("Curator's notes"))
+	side.add_child(_caption("Curator's notes"))
 	_notes = UI.text_edit("Where it works best, what to tweak, results you got…", p.get("notes", ""), 120)
-	body.add_child(_notes)
+	side.add_child(_notes)
 
 	var go := UI.primary("Save to the museum" if is_new else "Save changes", _save)
-	body.add_child(UI.spacer(4))
-	body.add_child(go)
+	go.tooltip_text = "Ctrl+S"
+	side.add_child(UI.spacer(4))
+	side.add_child(go)
 	if not is_new:
-		body.add_child(UI.danger("Delete prompt", _delete))
+		side.add_child(UI.danger("Delete prompt", _delete))
 
 	_draw_wings()
 	_draw_models()
 	_draw_tags()
 	_scan_vars()
-	_start = _snapshot()
-	if is_new:
-		_title.grab_focus.call_deferred()
+	if _draft.is_empty():
+		_start = _snapshot()
+		if is_new:
+			_title.grab_focus.call_deferred()
+	_draft = {}
+
+
+## Keep what's been typed when the window flips layout.
+func form_changed() -> void:
+	_draft = {"title": _title.text, "body": _body.text, "notes": _notes.text}
+	refresh()
+
+
+func _unhandled_key_input(e: InputEvent) -> void:
+	if e is InputEventKey and e.pressed and e.keycode == KEY_S and e.is_command_or_control_pressed():
+		_save()
+		get_viewport().set_input_as_handled()
 
 
 func _caption(t: String) -> Label:

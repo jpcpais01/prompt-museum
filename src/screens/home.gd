@@ -4,7 +4,114 @@ extends Screen
 
 func build() -> void:
 	live = true
-	# brand row
+	var wide := app.desktop()
+	# brand row (on desktop the rail carries the brand and the update chip)
+	if not wide:
+		body.add_child(_brand_row())
+
+	var who: String = str(Store.settings.get("name", "")).strip_edges()
+	var hello := UI.vbox(4)
+	hello.add_child(UI.label(UI.greeting() + ("," if who != "" else ""), 30, UI.INK, 800))
+	if who != "":
+		var n := UI.label(who, 30, UI.ACCENT_2, 800)
+		hello.add_child(n)
+	var count := Store.prompts.size()
+	var sub := "Your museum holds %s across %s." % [UI.plural(count, "prompt"), UI.plural(Store.collections.size(), "wing")] if count > 0 else "Your museum is empty. Add your first prompt."
+	hello.add_child(UI.wrap(sub, 15, UI.SOFT))
+	var stats := UI.hbox(10)
+	stats.add_child(W.stat(count, "Prompts", "library", UI.ACCENT))
+	stats.add_child(W.stat(Store.favorites().size(), "Favourites", "star_on", UI.GOLD))
+	stats.add_child(W.stat(Store.total_uses(), "Copies", "copy", UI.ACCENT_2))
+	if wide:
+		# desktop: the greeting and the stats share the hero row
+		var hero := UI.hbox(28)
+		hello.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		hello.size_flags_vertical = Control.SIZE_SHRINK_END
+		hello.add_child(UI.spacer(10))
+		hero.add_child(hello)
+		stats.custom_minimum_size.x = 470
+		hero.add_child(stats)
+		body.add_child(UI.spacer(6))
+		body.add_child(hero)
+	else:
+		body.add_child(hello)
+
+	# the search pill opens Search with the keyboard up
+	var search := PanelContainer.new()
+	search.add_theme_stylebox_override("panel", UI.box(Color(1, 1, 1, 0.06), 999, UI.LINE, 0))
+	search.custom_minimum_size = Vector2(0, 54)
+	var sr := UI.hbox(12)
+	sr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	search.add_child(UI.margin(sr, 18, 0, 18, 0))
+	var si := Icon.make("search", UI.SOFT, 20)
+	si.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sr.add_child(si)
+	var sl := UI.label("Search titles, text and #tags", 15, UI.FAINT, 600)
+	sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sr.add_child(sl)
+	if wide:
+		sr.add_child(UI.pill("Ctrl F", UI.FAINT))
+		sr.get_child(sr.get_child_count() - 1).size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	UI.tap(search, func(): app.go_tab("search", true, {"focus": true}), 0.985)
+	W.hover(search)
+	body.add_child(search)
+	if not wide:
+		body.add_child(stats)
+
+	body.add_child(UI.spacer(2))
+	body.add_child(UI.section("Wings", "See all", func(): app.go_tab("library")))
+	var row: Container
+	var wall: Control
+	if wide:
+		# desktop: every wing hangs at once, wrapping onto new lines
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 18)
+		flow.add_theme_constant_override("v_separation", 6)
+		row = flow
+		wall = UI.margin(flow, 0, 0, 0, 12)
+	else:
+		var hs := UI.hscroll()
+		hs.custom_minimum_size.y = 236 + 40
+		row = UI.hbox(14)
+		hs.add_child(UI.margin(row, 0, 4, 20, 20))
+		wall = hs
+	var first := true
+	for c in Store.collections:
+		var tile := W.collection_tile(c, app)
+		row.add_child(tile)
+		if first:
+			# the first wall is lit, like the selected tile on a console home
+			first = false
+			tile.get_meta("lift").call_deferred(true)
+	row.add_child(W.new_tile(app))
+	body.add_child(wall)
+
+	var pick := _exhibit()
+	if not pick.is_empty():
+		body.add_child(UI.section("Exhibit of the day"))
+		body.add_child(_exhibit_card(pick))
+
+	# favourites and recents: stacked on a phone, side by side on desktop
+	var cols := split(0.0)
+	if wide:
+		cols[1].size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var favs := Store.favorites()
+	if not favs.is_empty():
+		cols[0].add_child(UI.spacer(2))
+		cols[0].add_child(UI.section("Favourites", "See all", func(): app.go_tab("library", true, {"filter": "fav"})))
+		cols[0].add_child(cards(Store.sorted(favs, "used").slice(0, 3), 1))
+
+	var rec := Store.recent(5 if not wide else 3)
+	if not rec.is_empty():
+		cols[1].add_child(UI.spacer(2))
+		cols[1].add_child(UI.section("Recently used"))
+		cols[1].add_child(cards(rec, 1))
+	if count == 0:
+		body.add_child(W.empty("spark", "A museum with empty walls", "Prompts you save show up here, sorted into wings.", "Add a prompt", func(): app.edit_prompt()))
+
+
+func _brand_row() -> Control:
 	var top := UI.hbox(10)
 	var mark := TextureRect.new()
 	mark.texture = load("res://icon.png")
@@ -19,80 +126,7 @@ func build() -> void:
 		var upd := UI.chip("Update  " + Updater.latest, true, UI.ACCENT_2, func(): Updater.open_overlay())
 		top.add_child(upd)
 	top.add_child(UI.icon_button("gear", func(): app.go_tab("settings"), 42.0, UI.SOFT))
-	body.add_child(top)
-
-	var who: String = str(Store.settings.get("name", "")).strip_edges()
-	var hello := UI.vbox(4)
-	hello.add_child(UI.label(UI.greeting() + ("," if who != "" else ""), 30, UI.INK, 800))
-	if who != "":
-		var n := UI.label(who, 30, UI.ACCENT_2, 800)
-		hello.add_child(n)
-	var count := Store.prompts.size()
-	var sub := "Your museum holds %s across %s." % [UI.plural(count, "prompt"), UI.plural(Store.collections.size(), "wing")] if count > 0 else "Your museum is empty. Add your first prompt."
-	hello.add_child(UI.wrap(sub, 15, UI.SOFT))
-	body.add_child(hello)
-
-	# the search pill opens Search with the keyboard up
-	var search := PanelContainer.new()
-	search.add_theme_stylebox_override("panel", UI.box(Color(1, 1, 1, 0.06), 999, UI.LINE, 0))
-	search.custom_minimum_size = Vector2(0, 54)
-	var sr := UI.hbox(12)
-	sr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	search.add_child(UI.margin(sr, 18, 0, 18, 0))
-	var si := Icon.make("search", UI.SOFT, 20)
-	si.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	sr.add_child(si)
-	var sl := UI.label("Search titles, text and #tags", 15, UI.FAINT, 600)
-	sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	sr.add_child(sl)
-	UI.tap(search, func(): app.go_tab("search", true, {"focus": true}), 0.985)
-	W.hover(search)
-	body.add_child(search)
-
-	var stats := UI.hbox(10)
-	stats.add_child(W.stat(count, "Prompts", "library", UI.ACCENT))
-	stats.add_child(W.stat(Store.favorites().size(), "Favourites", "star_on", UI.GOLD))
-	stats.add_child(W.stat(Store.total_uses(), "Copies", "copy", UI.ACCENT_2))
-	body.add_child(stats)
-
-	body.add_child(UI.spacer(2))
-	body.add_child(UI.section("Wings", "See all", func(): app.go_tab("library")))
-	var hs := UI.hscroll()
-	hs.custom_minimum_size.y = 236 + 40
-	var row := UI.hbox(14)
-	var row_pad := UI.margin(row, 0, 4, 20, 20)
-	hs.add_child(row_pad)
-	var first := true
-	for c in Store.collections:
-		var tile := W.collection_tile(c, app)
-		row.add_child(tile)
-		if first:
-			# the first wall is lit, like the selected tile on a console home
-			first = false
-			tile.get_meta("lift").call_deferred(true)
-	row.add_child(W.new_tile(app))
-	body.add_child(hs)
-
-	var pick := _exhibit()
-	if not pick.is_empty():
-		body.add_child(UI.section("Exhibit of the day"))
-		body.add_child(_exhibit_card(pick))
-
-	var favs := Store.favorites()
-	if not favs.is_empty():
-		body.add_child(UI.spacer(2))
-		body.add_child(UI.section("Favourites", "See all", func(): app.go_tab("library", true, {"filter": "fav"})))
-		for p in Store.sorted(favs, "used").slice(0, 3):
-			body.add_child(W.prompt_card(p, app))
-
-	var rec := Store.recent(5)
-	if not rec.is_empty():
-		body.add_child(UI.spacer(2))
-		body.add_child(UI.section("Recently used"))
-		for p in rec:
-			body.add_child(W.prompt_card(p, app))
-	if count == 0:
-		body.add_child(W.empty("spark", "A museum with empty walls", "Prompts you save show up here, sorted into wings.", "Add a prompt", func(): app.edit_prompt()))
+	return top
 
 
 ## The same prompt all day: a gentle way to rediscover old ones.

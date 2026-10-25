@@ -124,6 +124,7 @@ static func expand() -> Control:
 
 static func _flat_button(b: Button, bg: Color, fg: Color, radius: int, border := Color(0, 0, 0, 0)) -> void:
 	b.mouse_filter = Control.MOUSE_FILTER_PASS
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	for s in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var c := bg
 		if s == "hover":
@@ -292,6 +293,7 @@ static func section(title: String, action := "", cb: Callable = Callable()) -> H
 		for s in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 			b.add_theme_color_override(s, ACCENT_2)
 		b.mouse_filter = Control.MOUSE_FILTER_PASS
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		if cb.is_valid():
 			b.pressed.connect(guard(cb))
 		h.add_child(b)
@@ -361,6 +363,7 @@ static func plural(n: int, word: String) -> String:
 ## presses pass through, and a release only counts if the finger stayed put.
 static func tap(c: Control, cb: Callable, depth := 0.975) -> void:
 	c.mouse_filter = Control.MOUSE_FILTER_PASS
+	c.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	c.gui_input.connect(func(e: InputEvent):
 		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
 			if e.pressed:
