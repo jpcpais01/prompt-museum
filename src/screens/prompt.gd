@@ -6,6 +6,11 @@ var _id := ""
 var _star: Button
 
 
+## one readable column on every window size
+func reading() -> bool:
+	return true
+
+
 func build() -> void:
 	live = true
 	_id = args.get("id", "")
@@ -23,9 +28,8 @@ func build() -> void:
 		UI.icon_button("more", _more, 46.0),
 	])
 
-	var cols := split(380.0)
-	var main: VBoxContainer = cols[0]
-	var side: VBoxContainer = cols[1]
+	var main := body
+	var side := body
 	var wide := app.desktop()
 
 	# where it hangs
@@ -111,8 +115,7 @@ func build() -> void:
 		notes.add_child(nv)
 		side.add_child(notes)
 
-	# the action bar: pinned to the bottom on a phone, at the top of the
-	# details column on desktop
+	# the action bar stays pinned to the bottom, on phone and desktop
 	var bar := UI.hbox(10)
 	if not vars.is_empty():
 		var raw := UI.icon_button("copy", func(): app.copy_prompt(_id, true), 52.0)
@@ -124,16 +127,7 @@ func build() -> void:
 		var cp := UI.primary("Copy prompt", func(): app.copy_prompt(_id))
 		cp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bar.add_child(cp)
-	if wide:
-		var act := UI.panel(16)
-		var av := UI.vbox(12)
-		act.add_child(av)
-		av.add_child(UI.caption("Use this exhibit", "spark", Color(col.lightened(0.3), 0.9)))
-		av.add_child(bar)
-		side.add_child(act)
-		side.move_child(act, 0)
-	else:
-		footer(bar)
+	footer(bar)
 
 
 func _toggle_star() -> void:

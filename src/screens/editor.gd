@@ -21,6 +21,11 @@ var _start := ""
 var _draft := {}
 
 
+## one readable column on every window size
+func reading() -> bool:
+	return true
+
+
 func build() -> void:
 	_id = args.get("id", "")
 	var p := Store.get_prompt(_id)
@@ -36,9 +41,8 @@ func build() -> void:
 		_model = p.model
 		_tags = p.tags.duplicate()
 		_favorite = p.favorite
-	var cols := split(400.0)
-	var main: VBoxContainer = cols[0]
-	var side: VBoxContainer = cols[1]
+	var main := body
+	var side := body
 	var wide := app.desktop()
 	var save := UI.primary("Save", _save)
 	save.custom_minimum_size = Vector2(88, 44)

@@ -1,5 +1,12 @@
 # Prompt Museum patch notes
 
+## 2026-10-25: One museum, every screen
+- The side panel on desktop is gone. The same floating tab bar now sits at the bottom on phones, tablets and computers, so the museum looks and feels the same everywhere.
+- Your screen's full width goes to your prompts, with more room for wing cards and prompt grids on wide windows.
+- A prompt and the editor now read as one clean column, centred on wide windows, instead of being split into two panels.
+- The Copy button stays pinned to the bottom of a prompt on desktop too, right where you expect it.
+- Hover a tab on desktop to see its shortcut: Ctrl+1 to 3 for the tabs and Ctrl+N for a new prompt.
+
 ## 2026-10-25: A new icon
 - Prompt Museum has a new icon: a gold gallery frame holding a glowing spark, on the museum's night-blue wall.
 - It shows up on your Android home screen (including round and themed icons on newer phones) and on the Windows app and taskbar.
