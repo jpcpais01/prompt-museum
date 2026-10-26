@@ -51,12 +51,22 @@ const DEFS = `
 <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
   <stop offset="0" stop-color="#05050b" stop-opacity="0"/><stop offset="1" stop-color="#05050b" stop-opacity=".92"/>
 </linearGradient>
+<linearGradient id="floorg" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#15123a"/><stop offset="1" stop-color="#05050c"/>
+</linearGradient>
+<linearGradient id="mirrorfade" gradientUnits="userSpaceOnUse" x1="0" y1="680" x2="0" y2="860">
+  <stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+</linearGradient>
+<mask id="mirror" maskUnits="userSpaceOnUse" x="0" y="0" width="1840" height="1280">
+  <rect x="0" y="0" width="1840" height="1280" fill="url(#mirrorfade)"/>
+</mask>
 <radialGradient id="glow"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
 <radialGradient id="vignette" cx="50%" cy="45%" r="75%">
   <stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".7"/>
 </radialGradient>
 <filter id="sh" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity=".6"/></filter>
 <filter id="halo" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="60"/></filter>
+<filter id="blur3" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3"/></filter>
 <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
 <filter id="wordsh" x="-20%" y="-40%" width="140%" height="200%">
   <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity=".65"/>
@@ -133,19 +143,32 @@ function wordmark(x, y, size, anchor = "start", tagline = null) {
 
 const PIECES = {
   // Steam header capsule shape (920x430), drawn at 2x
-  banner: { w: 1840, h: 860, draw: () => `<rect width="1840" height="860" fill="url(#wall)"/>
-    <ellipse cx="1290" cy="400" rx="560" ry="380" fill="#8b6cff" opacity=".42" filter="url(#halo)"/>
-    <ellipse cx="1700" cy="700" rx="320" ry="220" fill="#3dd6f5" opacity=".2" filter="url(#halo)"/>
-    <ellipse cx="300" cy="200" rx="420" ry="260" fill="#5b3cff" opacity=".2" filter="url(#halo)"/>
-    ${spot(1000, 0, 26, 860, 190)}${spot(1285, 0, 40, 860, 300)}${spot(1570, 0, 26, 860, 190)}
-    ${frame(1720, 330, 160, "c2", "code")}
-    ${frame(900, 250, 200, "c3", "chat")}
-    ${frame(1470, 250, 200, "c4", "scene")}
-    ${frame(1130, 130, 310, "c1", "spark")}
-    <rect y="560" width="1840" height="300" fill="url(#shade)" opacity=".55"/>
-    ${wordmark(120, 500, 190, "start", "YOUR AI PROMPTS, CURATED")}
+  banner: { w: 1840, h: 860, draw: () => {
+    const floor = 680;
+    const wall = [
+      [-50, 330, 140, "c4", "scene"], [170, 322, 150, "c2", "code"], [430, 288, 200, "c3", "chat"],
+      [1210, 288, 200, "c4", "scene"], [1520, 322, 150, "c2", "prompt"], [1750, 330, 140, "c3", "chat"],
+      [770, 215, 300, "c1", "spark"],
+    ];
+    const frames = wall.map(([x, y, w, c, a]) => frame(x, y, w, c, a)).join("");
+    const lights = wall.map(([x, y, w]) => spot(x + w / 2, 0, w * .12, floor, w * .9)).join("");
+    const pools = wall.map(([x, y, w]) => `<ellipse cx="${x + w / 2}" cy="${floor + 40}" rx="${w * 1.1}" ry="${w * .16}" fill="#fff6dd" opacity=".07" filter="url(#soft)"/>`).join("");
+    return `<rect width="1840" height="860" fill="url(#wall)"/>
+    <ellipse cx="920" cy="400" rx="620" ry="320" fill="#8b6cff" opacity=".4" filter="url(#halo)"/>
+    <ellipse cx="1650" cy="420" rx="300" ry="220" fill="#3dd6f5" opacity=".16" filter="url(#halo)"/>
+    <ellipse cx="200" cy="420" rx="300" ry="220" fill="#ff7ad9" opacity=".1" filter="url(#halo)"/>
+    <rect y="140" width="1840" height="3" fill="#ffc857" opacity=".22"/>
+    <rect y="150" width="1840" height="1" fill="#ffc857" opacity=".12"/>
+    ${lights}
+    <rect y="${floor}" width="1840" height="${860 - floor}" fill="url(#floorg)"/>
+    <g mask="url(#mirror)" filter="url(#blur3)"><g transform="translate(0 ${2 * floor}) scale(1 -1)">${frames}</g></g>
+    ${pools}
+    <rect y="${floor - 14}" width="1840" height="14" fill="#0b0a1c"/>
+    <rect y="${floor - 14}" width="1840" height="2" fill="#ffc857" opacity=".35"/>
+    ${frames}
     <rect width="1840" height="860" fill="url(#vignette)"/>
-    <rect width="1840" height="860" filter="url(#grain)"/>` },
+    <rect width="1840" height="860" filter="url(#grain)"/>`;
+  }},
   // Steam library capsule shape (600x900), drawn at 2x
   cover: { w: 1200, h: 1800, draw: () => `<rect width="1200" height="1800" fill="url(#wall)"/>
     <ellipse cx="600" cy="640" rx="520" ry="560" fill="#8b6cff" opacity=".45" filter="url(#halo)"/>
