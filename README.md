@@ -8,11 +8,11 @@ Save, organise and reuse your AI prompts, in a museum of your own.
 - **Backups**: copy your whole museum as text and import it anywhere.
 - **Updates in the app**: see what's new and install new versions with one tap.
 
-Built with Godot 4.5 (GDScript, Mobile renderer). Every merge to `main` publishes a release with a signed Android APK and a single-file Windows `.exe`.
+Built with Godot 4.5 (GDScript, Mobile renderer). Every merge to `main` publishes a release with a signed Android APK and a Windows zip holding the single-file `.exe` and the store art (banner, cover, logo in `store/`).
 
 ## Download
 
-Grab the latest from [Releases](../../releases/latest): `PromptMuseum.apk` for Android, `PromptMuseum.exe` for Windows.
+Grab the latest from [Releases](../../releases/latest): `PromptMuseum.apk` for Android, `PromptMuseum.zip` for Windows (unzip and run `PromptMuseum.exe`).
 
 ## Develop
 

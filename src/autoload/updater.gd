@@ -3,8 +3,9 @@ extends CanvasLayer
 ## the latest release; if that's newer than this build a banner drops in. Its
 ## full-screen page shows what's new since your version, then downloads the
 ## update with a live progress ring. On Android the signed APK goes to the
-## system installer; on Windows the new .exe is swapped in once the app has
-## quit, and the app starts again.
+## system installer; on Windows the release zip (the .exe plus the store art)
+## is unpacked into Downloads\PromptMuseum, the new .exe is swapped in once
+## the app has quit, and the app starts again.
 
 const REPO := "jpcpais01/prompt-museum"
 const API := "https://api.github.com/repos/%s/releases/latest" % REPO
@@ -12,6 +13,8 @@ const API := "https://api.github.com/repos/%s/releases/latest" % REPO
 const NOTES := "https://raw.githubusercontent.com/%s/%s/PATCH_NOTES.md"
 const NOTES_MAX := 40
 const RECHECK := 1200.0
+## where Windows updates are unpacked, inside the Downloads folder
+const UNPACK_DIR := "PromptMuseum"
 const AURORA := preload("res://shaders/aurora.gdshader")
 const RING := preload("res://shaders/ring.gdshader")
 
@@ -36,6 +39,7 @@ var _file := ""
 var _notes := ""
 var _manual := false
 var _banner_shown := false
+var _installing := false
 
 # the full-screen page
 var _overlay: Control
@@ -168,7 +172,7 @@ func _on_release(result: int, code: int, _headers: PackedStringArray, body: Pack
 		if manual:
 			checked.emit("latest", current)
 		return
-	var asset := pick_asset(data.get("assets", []), ".apk" if _android() else ".exe")
+	var asset := pick_asset(data.get("assets", []), ".apk" if _android() else ".zip")
 	if asset.is_empty():
 		# not attached yet: the next check picks it up
 		if manual:
@@ -193,7 +197,7 @@ func _on_release(result: int, code: int, _headers: PackedStringArray, body: Pack
 		_show_banner()
 
 
-## The release file for this platform (an .apk or the Windows .exe).
+## The release file for this platform (an .apk or the Windows .zip).
 static func pick_asset(assets: Array, ext: String) -> Dictionary:
 	for a in assets:
 		if a is Dictionary and str(a.get("name", "")).to_lower().ends_with(ext):
@@ -476,7 +480,7 @@ func _swap_to_download() -> void:
 
 func _start_download() -> void:
 	DirAccess.make_dir_recursive_absolute(_dir())
-	_file = _dir().path_join("PromptMuseum-%s.%s" % [latest, "apk" if _android() else "exe"])
+	_file = _dir().path_join("PromptMuseum-%s.%s" % [latest, "apk" if _android() else "zip"])
 	if _dl == null:
 		_dl = HTTPRequest.new()
 		_dl.download_chunk_size = 262144
@@ -553,6 +557,7 @@ func _on_dl_button() -> void:
 
 func _failed(msg: String) -> void:
 	_state = State.FAILED
+	_installing = false
 	_ring_mat.set_shader_parameter("spin", 0.0)
 	_set_dl_ui("Update didn't finish", msg, "Try again")
 
@@ -587,39 +592,86 @@ func _install() -> void:
 		_restart_windows()
 
 
+## The Downloads folder, where Windows updates are unpacked.
+static func downloads_dir() -> String:
+	var d := OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
+	if d == "":
+		d = OS.get_environment("USERPROFILE").path_join("Downloads")
+	return d
+
+
+## Unpacks every file in the zip at `zip` into `dest` (flat, so nothing can
+## land outside it), except the .exe, which goes to `exe_out` so it can be
+## swapped in after the app quits. Returns "" or what went wrong.
+static func unzip(zip: String, dest: String, exe_out: String) -> String:
+	var z := ZIPReader.new()
+	if z.open(zip) != OK:
+		return "The download is damaged. Try again."
+	DirAccess.make_dir_recursive_absolute(dest)
+	var got_exe := false
+	for name in z.get_files():
+		var base := name.get_file()
+		if base == "" or name.ends_with("/"):
+			continue
+		var exe := base.to_lower().ends_with(".exe")
+		var f := FileAccess.open(exe_out if exe else dest.path_join(base), FileAccess.WRITE)
+		if f == null:
+			if exe:
+				z.close()
+				return "Couldn't unpack the update."
+			continue
+		f.store_buffer(z.read_file(name))
+		f.close()
+		got_exe = got_exe or exe
+	z.close()
+	return "" if got_exe else "The download has no app in it."
+
+
 func _restart_windows() -> void:
-	var exe := OS.get_executable_path()
-	var app_dir := exe.get_base_dir()
-	# an app sitting somewhere read-only can't replace itself: open the release page
-	var probe := app_dir.path_join(".pm_write_test")
-	var fa := FileAccess.open(probe, FileAccess.WRITE)
-	if fa == null:
-		OS.shell_open(_page_url)
-		_failed("This folder is read-only, so the download page is open instead.")
+	if _installing:
 		return
-	fa.close()
-	DirAccess.remove_absolute(probe)
+	_installing = true
+	var win := func(p: String) -> String: return p.replace("/", "\\")
+	var exe := OS.get_executable_path()
+	var dest := downloads_dir().path_join(UNPACK_DIR)
+	var dl_exe := dest.path_join(exe.get_file())
+	var staged := _dir().path_join("PromptMuseum.exe")
+	_set_dl_ui("Installing %s" % latest, "Unpacking to Downloads\\%s…" % UNPACK_DIR, "Restart now")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var err := unzip(_file, dest, staged)
+	if err != "":
+		_failed(err)
+		return
+	# the running app gets the new .exe too, unless its folder is read-only:
+	# then the fresh copy in Downloads is the one that starts
+	var swap: bool = win.call(exe).to_lower() != win.call(dl_exe).to_lower()
+	if swap:
+		var probe := exe.get_base_dir().path_join(".pm_write_test")
+		var fa := FileAccess.open(probe, FileAccess.WRITE)
+		if fa == null:
+			swap = false
+		else:
+			fa.close()
+			DirAccess.remove_absolute(probe)
+	var run: String = exe if swap else dl_exe
 	Store.save_now()
 	var pid := OS.get_process_id()
-	var win := func(p: String) -> String: return p.replace("/", "\\")
 	var bat := _dir().path_join("apply_update.bat")
 	var lines := [
 		"@echo off",
 		":wait",
 		"tasklist /FI \"PID eq %d\" 2>nul | find \" %d \" >nul" % [pid, pid],
 		"if not errorlevel 1 (ping -n 2 127.0.0.1 >nul & goto wait)",
-		"set n=0",
-		":copy",
-		"move /Y \"%s\" \"%s\" >nul" % [win.call(_file), win.call(exe)],
-		"if not errorlevel 1 goto run",
-		"set /a n+=1",
-		"if %n% geq 15 goto run",
-		"ping -n 2 127.0.0.1 >nul",
-		"goto copy",
-		":run",
-		"start \"\" \"%s\"" % win.call(exe),
-		"(goto) 2>nul & del \"%~f0\"",
 	]
+	lines.append_array(_bat_copy("dl", win.call(staged), win.call(dl_exe)))
+	if swap:
+		lines.append_array(_bat_copy("app", win.call(staged), win.call(exe)))
+	lines.append_array([
+		"del \"%s\" >nul 2>&1" % win.call(staged),
+		"start \"\" \"%s\"" % win.call(run),
+		"(goto) 2>nul & del \"%~f0\"",
+	])
 	var f := FileAccess.open(bat, FileAccess.WRITE)
 	if f == null:
 		_failed("Couldn't prepare the update.")
@@ -630,3 +682,19 @@ func _restart_windows() -> void:
 		_failed("Couldn't start the updater.")
 		return
 	get_tree().quit()
+
+
+## Batch lines that copy `from` over `to`, retrying for a while in case the
+## old .exe is still locked as the app closes.
+static func _bat_copy(tag: String, from: String, to: String) -> Array:
+	return [
+		"set n=0",
+		":%s" % tag,
+		"copy /Y \"%s\" \"%s\" >nul" % [from, to],
+		"if not errorlevel 1 goto %s_ok" % tag,
+		"set /a n+=1",
+		"if %%n%% geq 15 goto %s_ok" % tag,
+		"ping -n 2 127.0.0.1 >nul",
+		"goto %s" % tag,
+		":%s_ok" % tag,
+	]

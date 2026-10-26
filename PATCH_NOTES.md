@@ -1,5 +1,10 @@
 # Prompt Museum patch notes
 
+## 2026-10-26: Fresh art for Windows
+- Prompt Museum for Windows now comes as a zip with the app and new artwork: a wide banner, a tall cover and the logo.
+- Updating from inside the app unpacks the new version into a Prompt Museum folder in your Downloads, then restarts into it like before.
+- If Prompt Museum sits in a folder it can't write to, the update now starts the fresh copy from Downloads instead of sending you to the website.
+
 ## 2026-10-25: One museum, every screen
 - The side panel on desktop is gone. The same floating tab bar now sits at the bottom on phones, tablets and computers, so the museum looks and feels the same everywhere.
 - Your screen's full width goes to your prompts, with more room for wing cards and prompt grids on wide windows.

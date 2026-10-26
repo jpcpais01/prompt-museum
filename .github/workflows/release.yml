@@ -1,8 +1,8 @@
 name: Build & release
 
 # Every push to main builds a signed Android APK and a single-file Windows
-# .exe, then publishes both together as one GitHub release (which the in-app
-# updater picks up). Pull requests build and test both without releasing.
+# .exe (zipped with the store art from store/), then publishes them together
+# as one GitHub release (which the in-app updater picks up). Pull requests build and test both without releasing.
 on:
   push:
     branches: [main]
@@ -160,10 +160,21 @@ jobs:
           ls -la build
           test "$(ls build | wc -l)" -eq 1
 
+      - name: Zip the .exe with the store art
+        run: |
+          set -e
+          cp store/PromptMuseum_banner.png store/PromptMuseum_cover.png store/PromptMuseum_logo.png build/
+          cd build
+          zip -9 PromptMuseum.zip PromptMuseum.exe PromptMuseum_banner.png PromptMuseum_cover.png PromptMuseum_logo.png
+          unzip -l PromptMuseum.zip
+
+      # the bare .exe still ships so builds from before the zip can update
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: build/PromptMuseum.exe
+          path: |
+            build/PromptMuseum.zip
+            build/PromptMuseum.exe
 
   release:
     needs: [android, windows]
@@ -181,7 +192,7 @@ jobs:
         run: |
           ls -la dist
           awk '/^## /{n++} n==1' PATCH_NOTES.md > release_notes.md
-          printf '\n---\n**Android:** download **PromptMuseum.apk** on your phone and open it (allow installs from your browser if asked).\n\n**Windows:** download **PromptMuseum.exe** and run it. Nothing else to unzip.\n\nAlready installed? Prompt Museum offers this update inside the app.\n' >> release_notes.md
+          printf '\n---\n**Android:** download **PromptMuseum.apk** on your phone and open it (allow installs from your browser if asked).\n\n**Windows:** download **PromptMuseum.zip**, unzip it and run **PromptMuseum.exe** (the banner, cover and logo art come along in the zip).\n\nAlready installed? Prompt Museum offers this update inside the app.\n' >> release_notes.md
           cat release_notes.md
 
       - name: Publish GitHub release
@@ -192,5 +203,6 @@ jobs:
           body_path: release_notes.md
           files: |
             dist/PromptMuseum.apk
+            dist/PromptMuseum.zip
             dist/PromptMuseum.exe
           make_latest: true

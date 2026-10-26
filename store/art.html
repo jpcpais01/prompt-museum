@@ -1,0 +1,176 @@
+<!doctype html>
+<!-- Store art for Prompt Museum. render.js opens this page once per piece
+     (?v=banner, ?v=cover, ?v=logo) and screenshots it to a PNG. -->
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Manrope; src: url("../assets/fonts/Manrope.ttf"); font-weight: 200 800; }
+html, body { margin: 0; background: transparent; }
+svg { display: block; }
+</style></head>
+<body><div id="art"></div>
+<script>
+const v = new URLSearchParams(location.search).get("v") || "banner";
+
+// four-point sparkle, the same as the icon's
+function star(cx, cy, r, k = .18) {
+  const w = r * k;
+  return `M${cx},${cy-r} C${cx+w},${cy-w} ${cx+w},${cy-w} ${cx+r},${cy} ` +
+    `C${cx+w},${cy+w} ${cx+w},${cy+w} ${cx},${cy+r} ` +
+    `C${cx-w},${cy+w} ${cx-w},${cy+w} ${cx-r},${cy} ` +
+    `C${cx-w},${cy-w} ${cx-w},${cy-w} ${cx},${cy-r} Z`;
+}
+
+const DEFS = `
+<radialGradient id="wall" cx="50%" cy="40%" r="80%">
+  <stop offset="0" stop-color="#241d5c"/><stop offset=".5" stop-color="#121029"/><stop offset="1" stop-color="#06070d"/>
+</radialGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#fff1c4"/><stop offset=".35" stop-color="#ffc857"/><stop offset=".7" stop-color="#d69a32"/><stop offset="1" stop-color="#ffe08a"/>
+</linearGradient>
+<linearGradient id="goldin" x1="1" y1="1" x2="0" y2="0">
+  <stop offset="0" stop-color="#fff1c4"/><stop offset=".5" stop-color="#c88a26"/><stop offset="1" stop-color="#8a5a14"/>
+</linearGradient>
+<linearGradient id="wordgold" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#fff4cf"/><stop offset=".45" stop-color="#ffd27a"/><stop offset="1" stop-color="#d69a32"/>
+</linearGradient>
+<linearGradient id="c1" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#8b6cff"/><stop offset=".55" stop-color="#5b8dff"/><stop offset="1" stop-color="#3dd6f5"/>
+</linearGradient>
+<linearGradient id="c2" x1="0" y1="1" x2="1" y2="0">
+  <stop offset="0" stop-color="#1c3b6e"/><stop offset=".6" stop-color="#2aa6d6"/><stop offset="1" stop-color="#7ef0d8"/>
+</linearGradient>
+<linearGradient id="c3" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#ff7ad9"/><stop offset=".5" stop-color="#8b6cff"/><stop offset="1" stop-color="#3a2a9a"/>
+</linearGradient>
+<linearGradient id="c4" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#ffb36b"/><stop offset=".55" stop-color="#ff6b8b"/><stop offset="1" stop-color="#5b2a8a"/>
+</linearGradient>
+<linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#fff6dd" stop-opacity=".22"/><stop offset=".7" stop-color="#fff6dd" stop-opacity=".04"/><stop offset="1" stop-color="#fff6dd" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#05050b" stop-opacity="0"/><stop offset="1" stop-color="#05050b" stop-opacity=".92"/>
+</linearGradient>
+<radialGradient id="glow"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="vignette" cx="50%" cy="45%" r="75%">
+  <stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".7"/>
+</radialGradient>
+<filter id="sh" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity=".6"/></filter>
+<filter id="halo" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="60"/></filter>
+<filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8"/></filter>
+<filter id="wordsh" x="-20%" y="-40%" width="140%" height="200%">
+  <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity=".65"/>
+</filter>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/>
+  <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .05 0"/></filter>`;
+
+// What hangs inside a frame, drawn on a 284x404 canvas (the icon's).
+const ART = {
+  spark: () => `<circle cx="142" cy="190" r="150" fill="url(#glow)"/>
+    <path d="${star(142, 195, 112, .16)}" fill="#fff"/>
+    <path d="${star(230, 85, 36, .2)}" fill="#fff" opacity=".9"/>
+    <path d="${star(60, 302, 22, .2)}" fill="#fff" opacity=".7"/>`,
+  // a prompt card: lines of text with a highlighted {variable}
+  prompt: () => `<rect x="36" y="60" width="212" height="284" rx="22" fill="#fff" opacity=".14"/>
+    <rect x="62" y="96" width="120" height="16" rx="8" fill="#fff" opacity=".9"/>
+    <rect x="62" y="134" width="160" height="10" rx="5" fill="#fff" opacity=".55"/>
+    <rect x="62" y="158" width="140" height="10" rx="5" fill="#fff" opacity=".55"/>
+    <rect x="62" y="182" width="74" height="22" rx="11" fill="#ffc857"/>
+    <rect x="144" y="188" width="70" height="10" rx="5" fill="#fff" opacity=".55"/>
+    <rect x="62" y="218" width="150" height="10" rx="5" fill="#fff" opacity=".55"/>
+    <rect x="62" y="242" width="100" height="10" rx="5" fill="#fff" opacity=".55"/>
+    <path d="${star(214, 296, 22, .2)}" fill="#fff"/>`,
+  // a chat bubble with a spark
+  chat: () => `<circle cx="142" cy="200" r="130" fill="url(#glow)" opacity=".7"/>
+    <path d="M58,120 h168 a26,26 0 0 1 26,26 v96 a26,26 0 0 1 -26,26 h-92 l-40,36 v-36 h-36 a26,26 0 0 1 -26,-26 v-96 a26,26 0 0 1 26,-26 Z" fill="#fff" opacity=".92"/>
+    <path d="${star(142, 194, 46, .2)}" fill="#8b6cff"/>`,
+  // a mountain-and-sun landscape, an image prompt
+  scene: () => `<circle cx="196" cy="128" r="44" fill="#fff4cf" opacity=".95"/>
+    <path d="M0,300 L90,190 L150,250 L210,170 L284,262 V404 H0 Z" fill="#2a1450" opacity=".75"/>
+    <path d="M0,340 L70,280 L140,330 L220,260 L284,310 V404 H0 Z" fill="#1a0b33" opacity=".85"/>`,
+  // a code window
+  code: () => `<rect x="30" y="80" width="224" height="244" rx="18" fill="#06121f" opacity=".55"/>
+    <circle cx="54" cy="104" r="6" fill="#ff5d73"/><circle cx="74" cy="104" r="6" fill="#ffc857"/><circle cx="94" cy="104" r="6" fill="#4ade80"/>
+    <rect x="52" y="140" width="64" height="10" rx="5" fill="#7ef0d8"/><rect x="124" y="140" width="96" height="10" rx="5" fill="#fff" opacity=".6"/>
+    <rect x="72" y="168" width="110" height="10" rx="5" fill="#fff" opacity=".6"/>
+    <rect x="72" y="196" width="50" height="10" rx="5" fill="#ffc857"/><rect x="130" y="196" width="70" height="10" rx="5" fill="#fff" opacity=".6"/>
+    <rect x="72" y="224" width="130" height="10" rx="5" fill="#fff" opacity=".6"/>
+    <rect x="52" y="252" width="40" height="10" rx="5" fill="#7ef0d8"/>
+    <path d="${star(222, 288, 20, .2)}" fill="#fff"/>`,
+};
+
+// A gold gallery frame whose top-left is (x, y) and width w, in the icon's
+// 380x500 proportions; canvas is a gradient id, art a key of ART.
+function frame(x, y, w, canvas, art, opts = {}) {
+  const k = w / 380;
+  const shadow = opts.shadow === false ? "" : `filter="url(#sh)"`;
+  return `<g transform="translate(${x} ${y}) scale(${k})">
+    <g ${shadow}>
+      <rect width="380" height="500" rx="26" fill="url(#gold)"/>
+      <rect x="34" y="34" width="312" height="432" rx="12" fill="url(#goldin)"/>
+      <rect x="48" y="48" width="284" height="404" rx="8" fill="url(#${canvas})"/>
+    </g>
+    <svg x="48" y="48" width="284" height="404" viewBox="0 0 284 404">${ART[art]()}</svg>
+    <rect x="12" y="12" width="356" height="476" rx="18" fill="none" stroke="#fff6d8" stroke-opacity=".55" stroke-width="3"/>
+  </g>`;
+}
+const fh = w => w * 500 / 380;
+
+function spot(cx, topY, w, bottomY, spread) {
+  return `<path d="M${cx - w},${topY} L${cx + w},${topY} L${cx + spread},${bottomY} L${cx - spread},${bottomY} Z" fill="url(#beam)"/>`;
+}
+
+function wordmark(x, y, size, anchor = "start", tagline = null) {
+  const t = tagline ? `<text x="${x}" y="${y + size * .52}" font-family="Manrope" font-weight="600"
+      font-size="${size * .27}" letter-spacing="${size * .02}" fill="#d9dcf0" fill-opacity=".8" text-anchor="${anchor}">${tagline}</text>` : "";
+  return `<g filter="url(#wordsh)">
+    <text x="${x}" y="${y - size * .92}" font-family="Manrope" font-weight="800" font-size="${size * .9}"
+      letter-spacing="${-size * .02}" fill="#f4f5fb" text-anchor="${anchor}">Prompt</text>
+    <text x="${x}" y="${y}" font-family="Manrope" font-weight="800" font-size="${size * .9}"
+      letter-spacing="${-size * .02}" fill="url(#wordgold)" text-anchor="${anchor}">Museum</text>
+    ${t}</g>`;
+}
+
+const PIECES = {
+  // Steam header capsule shape (920x430), drawn at 2x
+  banner: { w: 1840, h: 860, draw: () => `<rect width="1840" height="860" fill="url(#wall)"/>
+    <ellipse cx="1290" cy="400" rx="560" ry="380" fill="#8b6cff" opacity=".42" filter="url(#halo)"/>
+    <ellipse cx="1700" cy="700" rx="320" ry="220" fill="#3dd6f5" opacity=".2" filter="url(#halo)"/>
+    <ellipse cx="300" cy="200" rx="420" ry="260" fill="#5b3cff" opacity=".2" filter="url(#halo)"/>
+    ${spot(1000, 0, 26, 860, 190)}${spot(1285, 0, 40, 860, 300)}${spot(1570, 0, 26, 860, 190)}
+    ${frame(1720, 330, 160, "c2", "code")}
+    ${frame(900, 250, 200, "c3", "chat")}
+    ${frame(1470, 250, 200, "c4", "scene")}
+    ${frame(1130, 130, 310, "c1", "spark")}
+    <rect y="560" width="1840" height="300" fill="url(#shade)" opacity=".55"/>
+    ${wordmark(120, 500, 190, "start", "YOUR AI PROMPTS, CURATED")}
+    <rect width="1840" height="860" fill="url(#vignette)"/>
+    <rect width="1840" height="860" filter="url(#grain)"/>` },
+  // Steam library capsule shape (600x900), drawn at 2x
+  cover: { w: 1200, h: 1800, draw: () => `<rect width="1200" height="1800" fill="url(#wall)"/>
+    <ellipse cx="600" cy="640" rx="520" ry="560" fill="#8b6cff" opacity=".45" filter="url(#halo)"/>
+    <ellipse cx="1000" cy="1050" rx="300" ry="260" fill="#3dd6f5" opacity=".2" filter="url(#halo)"/>
+    <ellipse cx="180" cy="1000" rx="300" ry="260" fill="#ff7ad9" opacity=".12" filter="url(#halo)"/>
+    ${spot(600, 0, 70, 1800, 520)}
+    ${frame(28, 640, 200, "c2", "prompt")}
+    ${frame(972, 640, 200, "c4", "scene")}
+    ${frame(370, 330, 460, "c1", "spark")}
+    <rect y="1050" width="1200" height="750" fill="url(#shade)"/>
+    ${wordmark(600, 1560, 230, "middle", "YOUR AI PROMPTS, CURATED")}
+    <rect width="1200" height="1800" fill="url(#vignette)"/>
+    <rect width="1200" height="1800" filter="url(#grain)"/>` },
+  // the app icon at full size
+  logo: { w: 1024, h: 1024, draw: () => `
+    <radialGradient id="ibg" cx="50%" cy="42%" r="75%">
+      <stop offset="0" stop-color="#2b2266"/><stop offset=".55" stop-color="#14122e"/><stop offset="1" stop-color="#07080f"/>
+    </radialGradient>
+    <rect width="1024" height="1024" fill="url(#ibg)"/>
+    <ellipse cx="512" cy="500" rx="300" ry="340" fill="#8b6cff" opacity=".35" filter="url(#halo)"/>
+    <g transform="translate(512 512) scale(1.18) translate(-512 -512)">${frame(322, 262, 380, "c1", "spark")}</g>` },
+};
+
+const p = PIECES[v];
+document.getElementById("art").innerHTML =
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${p.w}" height="${p.h}" viewBox="0 0 ${p.w} ${p.h}"><defs>${DEFS}</defs>${p.draw()}</svg>`;
+document.fonts.ready.then(() => { document.title = "ready"; });
+</script></body></html>
