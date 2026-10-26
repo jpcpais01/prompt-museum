@@ -70,7 +70,23 @@ func _ready() -> void:
 	check(U.is_newer("v0.1.10", "0.1.9"), "0.1.10 is newer than 0.1.9")
 	check(not U.is_newer("0.1.9", "0.1.9"), "same version isn't newer")
 	check(U.is_newer("1.0", "0.9.99"), "major beats minor")
-	check(U.pick_asset([{"name": "PromptMuseum.apk"}, {"name": "PromptMuseum.exe"}], ".exe").name == "PromptMuseum.exe", "Windows picks the .exe")
+	check(U.pick_asset([{"name": "PromptMuseum.apk"}, {"name": "PromptMuseum.exe"}, {"name": "PromptMuseum.zip"}], ".zip").name == "PromptMuseum.zip", "Windows picks the .zip")
+	# the Windows zip unpacks its art next to each other and sets the .exe aside
+	var tmp := OS.get_user_data_dir().path_join("unzip_test")
+	DirAccess.make_dir_recursive_absolute(tmp)
+	var zp := ZIPPacker.new()
+	zp.open(tmp.path_join("u.zip"))
+	for zn in ["PromptMuseum.exe", "PromptMuseum_banner.png", "../evil.png"]:
+		zp.start_file(zn)
+		zp.write_file(zn.to_utf8_buffer())
+		zp.close_file()
+	zp.close()
+	var err: String = U.unzip(tmp.path_join("u.zip"), tmp.path_join("out"), tmp.path_join("staged.exe"))
+	check(err == "", "zip unpacks: %s" % err)
+	check(FileAccess.get_file_as_string(tmp.path_join("staged.exe")) == "PromptMuseum.exe", "the .exe is set aside")
+	check(FileAccess.file_exists(tmp.path_join("out/PromptMuseum_banner.png")), "the art lands in the folder")
+	check(FileAccess.file_exists(tmp.path_join("out/evil.png")) and not FileAccess.file_exists(tmp.path_join("evil.png")), "nothing escapes the folder")
+	check(U.unzip(tmp.path_join("missing.zip"), tmp.path_join("out"), tmp.path_join("staged.exe")) != "", "a broken zip fails")
 	check(U.pick_asset([{"name": "x.zip"}], ".apk").is_empty(), "no asset yet means none")
 	var mine := "## Old\n- One\n"
 	var theirs := "## New\n- Two [b]\n## Old\n- One\n"
